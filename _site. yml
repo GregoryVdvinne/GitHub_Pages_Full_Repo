@@ -1,0 +1,14 @@
+name: "My_Website"
+navbar:
+  title: "Gregory Vander Vinne"
+left:
+  - text: "Home"
+href: index.html
+right: 
+  - icon: fa-envelope fa-lg
+href: mailto:<g.vandervinne1@gmail.com>
+  - icon: fa-github fa-lg
+href: http://github.com/<GregoryVdVinne>/
+  output:
+  html_document:
+  theme: sandstone
