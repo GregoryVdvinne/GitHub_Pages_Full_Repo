@@ -1,0 +1,336 @@
+---
+title: "Plotting Advanced Goalkeeping Stats With Plotly"
+author: "Gregory Vander Vinne"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    # code_folding: 'hide'
+    toc: true
+    toc_float: false
+---
+
+## Introduction
+
+As a game that is very fluid and has few scoring plays, football (soccer) is not a game in which you frequently hear fans quoting a lot of statistics other than perhaps an attacker's goals and assists. As somebody who analyzes data for a living and plays/watches football as a hobby, I recently became interested in taking a closer look at some of the free football-related data available online. I decided that goalkeeping stats would be a good place to start for two reasons. First, goalkeeping stats are among the most telling statistics available. Second, I have played goalkeeper nearly my entire life.
+
+In this post we will look at which keepers were in the best form last season and which keepers have been performing well over the past three seasons. I give some thoughts on what we can really learns from these statistics, which keepers stand out to me, and which keepers might be ones to watch for the future. 
+
+
+## Technical Notes
+
+The data are based only on league matches. In the information displayed when hovering your mouse over a data point, a few keepers may be shown to be playing for a club they played for previously, and some keepers may be one year younger than they currently are. This has to do with the fact that these data are from past seasons. While I could have remedied this, I didn't think it was worth the time given that I am doing this simply for enjoyment. The actual statistics are accurate. Regarding the plots, this is my first foray into using Plotly (instead of ggplot2) for plotting in R. Please forgive me for any imperfections in the figure aesthetics.   
+
+```{r Settings, echo=FALSE}
+#No messages and warnings in HTML output
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo = FALSE,
+                      fig.width = 10, fig.height = 7)
+```
+
+```{r Setup, echo=FALSE}
+#Clear memory
+rm(list = ls(all = TRUE))
+
+#Load packages
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  janitor,       # data cleaning and tables
+  tidyverse,     # data management and visualization
+  knitr,         # print pretty results
+  plotly,        # interactive plots
+  worldfootballR
+  # RColorBrewer, # color palettes 
+  # wesanderson   # color palettes  
+)
+
+```
+
+``` {r Load and Combine Data, echo=FALSE, cache = TRUE}
+
+#Download advanced GK stats from FbRef for 2020-21 to 2022-23 seasons
+kprs_adv <- fb_big5_advanced_season_stats(season_end_year= c(2021:2023), stat_type= "keepers_adv", team_or_player= "player")
+
+#Download basic GK stats from FbRef for 2020-21 to 2022-23 seasons
+kprs_bas <- fb_big5_advanced_season_stats(season_end_year= c(2021:2023), stat_type= "keepers", team_or_player= "player") %>%
+  select(Player, Season_End_Year, MP_Playing) #I only acutally need matches played from this
+
+#Join the two datasets
+myData <- full_join(kprs_adv, kprs_bas, by=c("Player","Season_End_Year"))
+
+#Set Palette... I suffer from indecision
+# myPal <- brewer.pal(8,"Dark2")
+# myPal <- wes_palette(name="Darjeeling1", n=5)
+# myPal <- c("#589C48","#F58024","#994FB2","#1A1A1D")
+myPal <- c("#8c38a5","#DD4D21","#3A6D41","#21ddd0","#6d3c3a","#a59838","#757780","#1A1A1D")
+
+```  
+
+``` {r Clean Data, echo=FALSE}
+#Cleaning 
+myData <- myData %>%
+  #Rename variables
+  rename("Year" = "Season_End_Year" ,
+         "PSxG_Abv" = "PSxG+_per__minus__Expected",
+         "PSxG" = "PSxG_Expected",
+         "Matches" = "MP_Playing",
+         "Lch_Cmp_Pct" = "Cmp_percent_Launched",
+         "Lch_Pct" = "Launch_percent_Passes",
+         "Lchs" = "Att_Launched",
+         "Cmp" = "Cmp_Launched",
+         "Opp" = "Opp_Crosses",
+         "Stp" = "Stp_Crosses",
+         "Stp_Pct" = "Stp_percent_Crosses",
+         "AvgDist" = "AvgDist_Sweeper",
+         "OPA" = "#OPA_Sweeper",
+         "OPA90" = "#OPA_per_90_Sweeper",
+         "Name" = "Player")
+
+#More wrangling
+myData <- myData %>%
+  mutate(My_Stat = PSxG_Abv/PSxG, #Create goals saved above expected per expected goal
+         Age_Category = case_when(     #Create age categories
+           Age < 25 ~ "Under 25",
+           Age > 30 ~ "Over 30",
+           TRUE ~ "25 to 30"
+           ),
+         Age_Category = factor(Age_Category, levels = c("Under 25", "25 to 30", "Over 30")),
+         Year = case_when(
+           Year == 2021 ~ "2020-21",
+           Year == 2022 ~ "2021-22",
+           Year == 2023 ~ "2022-23"
+           )
+         ) 
+
+#Combined data for past three seasons
+aggData <- myData %>%
+  group_by(Name) %>%
+  select(Name, Squad, Matches, OPA, AvgDist, PSxG_Abv, PSxG, Lchs, Cmp, Opp, Stp, Age, Age_Category) %>%
+  mutate(Seasons = 1,                       #To be summed in next line to get number of seasons in data 
+         Age=as.character(Age)) %>%         #So that it does not get summed 
+  mutate_if(is.numeric, sum) %>%            #Sum all numeric variables to get total over past three seasons
+  filter(Seasons > 1, Matches >= 38) %>%    #Must have played in at least two of the last three seasons & a total of at least 38 matches
+  mutate(Age = as.numeric(Age),             #Turn age back into numeric  
+         AvgDist = AvgDist/Seasons) %>%     #Average distance has to be simple average due to data available  
+  slice_max(Age)                            #Take just one row per player with current age
+
+curData <- myData %>%
+  filter(Year=="2022-23", Matches >= 15)
+
+```
+
+
+``` {r Set Up For PLotting, message = FALSE, warning = FALSE}
+#Title font
+tFont <- list(
+  family = "Roboto",
+  size = 20)
+
+#Save plot making code as function
+plot_func <- function(Data, X, Y, 
+                      xTitle, yTitle, mainTitle,
+                      textX, textY,
+                      ZeroLineColor=NULL) {
+
+  #Annotations
+  a <- list(
+    x = textX,
+    y = textY,
+    text = m$Name,
+    xref = "x",
+    yref = "y",
+    showarrow = TRUE,
+    arrowhead = 4,
+    arrowsize = 0.4,
+    ax = -15,
+    ay = -15
+  )
+  #Plot
+  plot_ly(Data, x= ~X, y= ~Y, 
+          color = ~Age_Category,
+          colors = myPal[1:3],   #Set Color Palette
+          opacity = 0.75,
+          type = "scatter", mode='markers',
+          text = ~paste('</br> Name:', Name, 
+                        '</br> Team:', Squad,
+                        '</br> Age:', Age,
+                        '</br> Matches:', Matches),
+          hoverinfo= 'text') %>% #Make it so that only what I've Specified in 'Text' shows up on hover
+  layout(legend=list(orientation = "h", 
+                     y= 1.05,
+                     x=-0.07,
+                     title=list(text='Age:')),
+         xaxis = list(title = xTitle), 
+         yaxis = list(title = yTitle, zerolinecolor = ZeroLineColor),
+         title = list(text = mainTitle, y = 1, x = 0.011, font = tFont),
+         annotations = a, 
+         font = list(family="Roboto")
+         )
+}
+
+```
+
+## Shot Stopping 
+
+We will start by looking at what everyone thinks of when they think of goalkeeping: shot stopping. Though there are several different statistics that attempt to measure how effectively a keeper stops shots, post-shot goals saved above expected, or PSGSAx, and similar statistics derived from it, are by far the best statistics available to us. PSGSAx might sound complicated but it is really not. PSGSAx is the number of saves a keeper made minus the number of post-shot expected goals (PSxG) they faced. Each time a goalkeeper faces a shot on target, that shot is assigned a PSxG value. The PSxG value represents the percentage of the time that we would expect a given shot to go in the net given where on the field the shot was taken from and the trajectory of the shot. So a shot taken from ten yards out from the middle of the goal traveling toward the top corner would have a PSxG value near one, while a shot that rolls along the ground toward the middle of the goal from 30 yards out would have a PSxG value near 0. An example of how this effects a goalkeeper's PSGSAx is that if a keeper saves a shot with a post-shot expected goal value of 0.75, their PSGSAx will increase by 0.75. However, if they concede the goal, their PSGSAx will decrease by 1 minus 0.75, or 0.25. Therefore, PSGSAx can be positive or negative. A perfectly average keeper should have a PSGSAx of 0.        
+
+In the below plots I show PSGSAx on the Y axis and PSGSAx divided by the number of post-shot expected goals a keeper faced on the X axis. Essentially, the x-axis helps account for the fact that keepers who face very few shots have fewer opportunists to increase or decrease there gross PSGSAx. Therefore, I consider the x-axis a slightly better measure than the Y axis but having both help one to understand context. I believe that these stats are *much* more telling regarding a keeper's shot-stopping abilities than clean sheets or simple save percentage, which I, among others, believe are hardly telling at all. See, for example https://www.sportsnet.ca/soccer/soccer-analytics-hugo-lloris-save-percentage-goalkeepers-premier-league/. 
+
+Before continuing, it is important to note that while I think these stats do tell us something about keepers' performances and help us to understand the quality of keepers they do not tell the full story. For example, PSGSAx doesn't account for where defenders are on the field when a shot is taken.  
+
+
+``` {r Shot Stopping 2022-23, message = FALSE, warning = FALSE}
+#Select keepers we want to add permanent annotations for in these plots
+topKeepers <- c("Yehvann Diouf","Alban Lafont", "Marc-André ter Stegen", "Alisson")
+
+#For annotations
+m <- curData %>%
+  filter(Name %in% topKeepers)
+#Plot Shot Stopping This Year
+curData %>%
+  plot_func(X=.$My_Stat, Y=.$PSxG_Abv, textX = m$My_Stat, textY = m$PSxG_Abv,
+            xTitle = "Goals Saved Above Expected Per Expected Goal",
+            yTitle = "Goals Saved Above Expected",
+            mainTitle = "Shot Stopping 2022-23")
+```
+
+
+``` {r Shot Stopping 2020-21 to 2022-23, message = FALSE, warning = FALSE}
+#Select keepers we want to add permanent annotations for in these plots
+topKeepers <- c("Yehvann Diouf","Alban Lafont", "Mike Maignan", "Alisson")
+
+#For annotations
+m <- aggData %>%
+  filter(Name %in% topKeepers)
+#Plot shot stopping in last three years combined
+aggData %>%
+  plot_func(X=.$PSxG_Abv/.$PSxG, Y=.$PSxG_Abv, textX = m$PSxG_Abv/m$PSxG, textY = m$PSxG_Abv,
+            xTitle = "Goals Saved Above Expected Per Expected Goal",
+            yTitle = "Goals Saved Above Expected",
+            mainTitle = "Shot Stopping 2020-21 to 2022-23")
+
+```
+
+To be included in the charts for the 2022-23 season alone, keepers must have participated in at least 15 league matches in the season. To be included in the charts for the last three seasons combined, keepers must have played in at least two out of the three seasons and they must have played a total of at least 38 matches. 
+
+Looking at the data, there are few unsurprising keepers who stand out, and a few rather surprising ones who stand out as well. It is clear that, as most readers probably already thought without seeing stats, Allison and Ter Stegen had fantastic seasons last season, while Allison, Maignan, and Courtois have been among the best shot-stoppers in Europe over the past three seasons combined. As someone who has rated Bernd Leno very highly since his early days at Bayer Leverkusen, I also can't help but point out that he, too, stands out in both charts. Kepa's relative success stopping shots over the past three seasons may come as a surprise to some but he has played only about one season worth of league matches in that time. Perhaps the most surprising is Edgar Badia of Elche, who had the highest PSGSAx over the last three seasons across the top five leagues. He did benefit from facing a lot of shots while playing for a relegation-battling Elche side though. When you take the number of post-shot expected goals faced into account, he is slightly less exceptional. 
+
+I have coloured the points by age category to make it easier to spot young goalkeepers who might be ones to watch for the future. Among the young keepers, Alban Lafont has been very strong over the last few seasons. Unsurprisingly, Donnarumma and Koebel also look strong, while Mamardashvili has been above average despite being one of the very youngest starting keepers in Europe. When it comes to just last season, Yehvanne Diouf's performance jumps off the page. His debut season in 2022-23 was incredible, and from reading some articles, he looked nearly as good in-person as good as his stats look on paper. One season, however, is a small sample size. I expect some regression to the mean from him this year but he is one to watch nonetheless.      
+
+## Intercepting Crosses
+
+To gauge how keepers have faired at defending crosses, I look at two very similar stats. On the y-axis I show total crosses intercepted, while on the x-axis I show percentage of crosses intercepted. I don't believe that these simple stats gauge a keeper's ability to defend crosses as well as PSGSAx gauges a keeper's ability to stop shots. These stats ignore context. Some keepers might face crosses that are more difficult to defend than other keepers. This is likely to be the result of the way the team in front of them defends, the way teams in their league play, or a number of other reasons. However, I do believe that these stats can tell us a little bit, or at the very least, be interesting to look at. 
+
+``` {r Cross Stopping 2022-23}
+
+#Select keepers we want to add permanent annotations for in these plots
+topKeepers <- c("Yehvann Diouf","Alban Lafont", "Emiliano Martínez")
+
+#For annotations
+m <- curData %>%
+  filter(Name %in% topKeepers)
+#Plot cross interceptions This Year
+curData %>%
+  plot_func(X=.$Stp_Pct, Y=.$Stp, textX = m$Stp_Pct, textY = m$Stp,
+            xTitle = "Percentage of Crosses Intercepted",
+            yTitle = "Total Crosses Intercepted",
+            mainTitle = "Cross Defending 2022-23")
+```
+
+ 
+``` {r Cross Stopping Three Season}
+#For annotations
+m <- aggData %>%
+  filter(Name %in% topKeepers)
+#Plot cross interceptions in last three years combined
+aggData %>%
+  plot_func(X=.$Stp/.$Opp, Y=.$Stp,  textX = m$Stp/m$Opp, textY = m$Stp,
+            xTitle = "Percentage of Crosses Intercepted",
+            yTitle = "Total Crosses Intercepted",
+            mainTitle = "Cross Defending 2020-21 to 2022-23")
+
+```
+
+First, Emiliano Martinez is outstanding. He is clearly both very aggressive and very successful when it comes to intercepting crosses. Among younger keepers, Lafont looks quite strong still and, as with shot-stopping, Yehvanne Diouf looked exceptional last season.
+
+## Sweeper Keeping
+
+Next I thought I'd look at sweeping. Gauging which keepers are the best sweepers, that is, the best at coming out to deal with through balls, is a difficult task. Below I show two highly correlated stats plotted against each other. The stats are average distance from goal of all defensive actions, and the number of actions each keeper takes outside of their penalty area per 90 minutes. While quite interesting, I am not confident that these stats are really great indicators of how good a keeper actually is at sweeping. The amount a keeper comes out to sweep up probably has a lot to do with how high of a defensive line his team plays with and how much defending his team do. Additionally, knowing that a keeper comes out of his box a lot doesn't tell us how successful he is in those attempts. Still, one would expect that if a keeper came out and failed to win the ball a lot, he would either be replaced or forced to change his ways. 
+
+``` {r Sweeping 2022-23, message = FALSE, warning = FALSE,  figure.height=8, figure.width=10}
+#Select keepers we want to add permanent annotations for in these plots
+topKeepers <- c("Yehvann Diouf","Alban Lafont", "Manuel Riemann", "Manuel Neuer", "Alisson")
+
+#For annotations
+m <- curData %>%
+  filter(Name %in% topKeepers)
+#Plot cross tnterceptions This Year
+curData %>%
+  plot_func(X=.$AvgDist, Y=.$OPA90,
+            textX = m$AvgDist, textY = m$OPA90,
+            xTitle = "Average Distance From Goal of All Defensive Actions",
+            yTitle = "Number of Actions Outside Penalty Area Per 90 Minutes",
+            mainTitle = "Sweeper Keeping 2022-23")
+```
+
+
+``` {r Sweeping Three Season, message = FALSE, warning = FALSE,  figure.height=8, figure.width=10}
+#For annotations
+m <- aggData %>%
+  filter(Name %in% topKeepers)
+#Plot cross interpections in last three years combined
+aggData %>%
+  plot_func(X=.$AvgDist, Y=.$OPA/.$Matches,
+            textX = m$AvgDist, textY = m$OPA/m$Matches,
+            xTitle = "Average Distance From Goal of All Defensive Actions",
+            yTitle = "Number of Actions Outside Penalty Area Per 90 Minutes",
+            mainTitle = "Sweeper Keeping 2020-21 to 2022-23")
+
+
+```
+
+Clearly, the two Manuels - Neuer and Riemann - are outlines. Alisson is also makes a lot of plays relatively far up the pitch. Unlike in the previous charts, Lafont and Diouf are not outstanding. Beyond interesting individual players, I also noticed an interesting pattern between leagues in these charts. It appears to me that Bundesliga keepers on the whole are much more aggressive than keepers in other leagues. I have since explored that pattern and found that it is true, and not just because of Neuer and Riemann.  
+
+
+## Long-Ball Passing
+
+Lastly, we take a look at keepers' success in playing long balls. A long ball here is defined as a ball played further than 40 yards. I show both the number of long balls played per game and the percentage of long balls completed to teammates successfully. The number of long balls played per game by itself is not a measure of a keepers' long passing ability but a keeper who plays a lot of long balls at a high success rate is probably good at playing long balls. At this point I might be beating a dead horse, but these stats are far from perfect for judging a keeper's ability to play long passes. The team and manager a keeper plays for probably have a large impact on both of these stats.  
+
+``` {r Long Balls 2022-23, message = FALSE, warning = FALSE,  figure.height=8, figure.width=10}
+#Select keepers we want to add permanent annotations for in these plots
+topKeepers <- c("Yehvann Diouf","Alban Lafont", "Manuel Riemann", "Manuel Neuer")
+
+#For annotations
+m <- curData %>%
+  filter(Name %in% topKeepers)
+#Plot cross interceptions This Year
+curData %>%
+  plot_func(X=.$Lchs/.$Matches, Y=.$Cmp/.$Lchs,
+            textX = m$Lchs/m$Matches, textY = m$Cmp/m$Lchs,
+            xTitle = "Long-Balls Played Per Game",
+            yTitle = "Percentage of Long-Balls Completed to Teammates",
+            mainTitle = "Long-Ball Passing 2022-23")
+```
+
+
+``` {r Long Balls Three Season, message = FALSE, warning = FALSE,  figure.height=8, figure.width=10}
+#For annotations
+m <- aggData %>%
+  filter(Name %in% topKeepers)
+#Plot cross interceptions in last three years combined
+aggData %>%
+  plot_func(X=.$Lchs/.$Matches, Y=.$Cmp/.$Lchs,
+            textX = m$Lchs/m$Matches, textY = m$Cmp/m$Lchs,
+            xTitle = "Long-Balls Played Per Game",
+            yTitle = "Percentage of Long-Balls Completed to Teammates",
+            mainTitle = "Long-Ball Passing 2020-21 to 2022-23")
+
+```
+
+Once again, Manuel Riemann proves to be a total outlier. Altogether, he is one of the most fascinating keepers in these graphs. I would love to hear from some Bochum fans about what is going on with him. Meanwhile, Yehvanne Diouf stood out in this respect as well last season. Some familiar names have high long ball completion percentages also. Ter Stegen and Neuer have the highest and second-highest completion percentages, respectively, over the past three seasons, while Handanovic, Szczesney, and Ederson all rank highly as well. Manchester City's other keeper, Stefan Ortega has a very high completion percentage on a large volume of passes in addition to looking good in the other graphs also. It is surprising to me that he is satisfied with being a backup keeper given how strong he looked for Arminia Bielefeld.
+
+
+
+
+
+
+
+
