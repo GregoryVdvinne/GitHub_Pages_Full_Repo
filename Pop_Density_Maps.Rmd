@@ -1,0 +1,10 @@
+---
+title: "Population Density Maps"
+author: "Gregory Vander Vinne"
+date: "2023-09-06"
+output: html_document
+---
+
+Below are a few population density maps that I had fun making. All of them use the the Kontour Population Density Dataset. 
+
+<img src="Density_Maps/Alberta.png" style="width:100%">
