@@ -8,3 +8,5 @@ output: html_document
 Below are a few population density maps that I had fun making. All of them use the the Kontour Population Density Dataset. 
 
 <img src="Density_Maps/Alberta.png" style="width:100%">
+
+<img src="Density_Maps/Tanzania.png" style="width:100%">
