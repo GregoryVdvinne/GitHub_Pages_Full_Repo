@@ -1,5 +1,5 @@
 ---
-title: "Plotting Advanced Goalkeeping Stats With Plotly"
+title: "Exploring Goalkeeping Statistics With Interactive Plots"
 author: "Gregory Vander Vinne"
 date: "`r Sys.Date()`"
 output:
@@ -20,7 +20,7 @@ In this post we will look at which keepers were in the best form last season and
 
 ## Technical Notes
 
-The data are based only on league matches. In the information displayed when hovering your mouse over a data point, a few keepers may be shown to be playing for a club they played for previously, and some keepers may be one year younger than they currently are. This has to do with the fact that these data are from past seasons. While I could have remedied this, I didn't think it was worth the time given that I am doing this simply for enjoyment. The actual statistics are accurate. Regarding the plots, this is my first foray into using Plotly (instead of ggplot2) for plotting in R. Please forgive me for any imperfections in the figure aesthetics.   
+The data are based only on league matches. In the information displayed when hovering your mouse over a data point, a few keepers may be shown to be playing for a club they played for previously, and some keepers may be one year younger than they currently are. This has to do with the fact that these data are from past seasons. While I could have remedied this, I didn't think it was worth the time given that I am doing this simply for enjoyment. The actual statistics are accurate.   
 
 ```{r Settings, echo=FALSE}
 #No messages and warnings in HTML output
@@ -215,7 +215,7 @@ plot_func <- function(Data, X, Y,
                         ),
                      show.legend = FALSE, size = 3, family = "Roboto", alpha = 0.75
                     ) + 
-    scale_color_manual(values=colPal[1:3])+
+    scale_color_manual(values=colPal[1:3], name = "Age Category")+
     ggtitle(mainTitle, 
             subtitle = "\n" ) + #creat space at top-left for legend 
     xlab(xTitle) + 
