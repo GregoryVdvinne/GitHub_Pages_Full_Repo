@@ -202,6 +202,7 @@ plot_func <- function(Data, X, Y,
                       ZeroLineColor=NULL) {
 
  Data$tooltip <- c(paste0("Name = ", Data$Name,
+                        "\n Age = ", Data$Team,
                         "\n Age = ", Data$Age, 
                         "\n Matches = ", Data$Matches))
  

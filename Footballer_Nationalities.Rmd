@@ -1,0 +1,134 @@
+---
+title: "Footballers' Nationalities"
+author: "Gregory Vander Vinne"
+date: "2023-10-14"
+output:
+  html_document:
+    # code_folding: 'hide'
+    toc: true
+    toc_float: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Load Packages and Data, include=FALSE}
+#Clear memory
+rm(list = ls(all = TRUE))
+
+#Load packages
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  tidyverse,     # data management and visualization
+  showtext,      # help with downloaded fonts  
+  systemfonts,   # use downloaded fonts
+  eurostat,      # get list of european countries  
+  here,          # relative file pathways
+  RColorBrewer,  # effective color palettes  
+  rayshader,     # 3d plots
+  colorspace,    # fancy work with colors like darken and lighten
+  worldfootballR # football statistics
+)
+
+#Download basic player-level stats from FbRef for 2020-21 to 2022-23 seasons
+myData <- fb_big5_advanced_season_stats(season_end_year= 2023, stat_type= "standard", team_or_player= "player")
+
+#Load coutnry abbreviations matched to names so we can get full names
+fifaCodes <- read.csv(here("Europe_Borders/Fifa_Country_Codes.csv"))
+
+#Load country polygons
+borders <- map_data("world") %>%
+  rename(Nation = region)
+
+myPal <- brewer.pal("Blues", n=9)
+
+```
+
+```{r Wrangle Data}
+
+#Get number of players by nationality
+natData <- myData %>%
+    mutate(Nation = case_when(
+    Nation %in% c("ENG", "SCO","NIR", "WAL") ~ "UK", 
+    TRUE ~ Nation
+    )
+  ) %>%
+  group_by(Nation) %>%
+  summarise(Count = n()) %>%
+  #Give full country names
+  rename(Nation_Code = Nation) %>%
+  left_join(fifaCodes, by="Nation_Code") %>%
+  mutate(Nation = case_when(
+    Nation_Code == "UK" ~ "UK", 
+    TRUE ~ Nation
+    )
+  ) %>%
+  full_join(borders, by="Nation") %>%
+  filter(Nation != "Antarctica")
+
+#Replace NA player count with 0
+natData$Count[is.na(natData$Count)] <- 0
+
+```
+
+```{r GGPlot Zoomed in On Europe}
+#test data
+europe_gg <- ggplot(natData, aes(x=long, y=lat, group = group, fill = Count)) + 
+  geom_polygon() + 
+  coord_fixed(xlim = c(-15,25),
+              ylim = c(35, 65))+
+  scale_fill_distiller(palette = "Blues", direction = 1) +
+  theme(
+    plot.background = element_rect(fill  = "white"),
+    panel.grid = element_blank(), 
+    panel.background = element_blank(),
+    axis.ticks = element_blank(),
+    axis.title = element_blank(),
+    # axis.text = element_blank()
+  )
+
+europe_gg
+
+
+```
+```{r GGPlot Zoomed in On Europe - Log Scaled}
+#PLot with log scale
+europe_gg_log <- natData %>%
+  mutate(Count = Count + 1.01) %>% #For log-scaling
+  ggplot(aes(x=long, y=lat, group = group, fill = Count)) + 
+    geom_polygon() + 
+    coord_fixed(xlim = c(-15,40),
+                ylim = c(35, 65))+
+    # scale_fill_distiller(palette = "Blues", direction = 1) +
+    scale_fill_gradientn(colours = myPal,
+                        trans = "log", breaks = c(1, 7, 55, 400)) +
+    ggtitle("Where Are Footballers in the Top 5 Leagues From?") + 
+    theme(
+      #  plot.background = element_rect(fill  = lighten("#F7A072",0.8)),
+      panel.grid = element_blank(), 
+      # panel.background = element_rect(fill  = lighten("#F7A072",0.8)),
+      panel.background = element_rect(fill  = lighten("#594f3b",0.9)),
+      axis.ticks = element_blank(),
+      axis.title = element_blank(),
+      axis.text = element_blank()
+    )
+
+europe_gg_log
+
+
+```
+
+
+# ```{r 3D GGPlot Zoomed in On Europe}
+# 
+# 
+# plot_gg(europe_gg)
+# 
+# 
+# ```
+
+
+
+
+
