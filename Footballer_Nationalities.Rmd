@@ -95,6 +95,9 @@ natData <- footballers %>%
 #Replace NA player count with 0
 natData$Count[is.na(natData$Count)] <- 0
 
+natData <- natData %>%
+  mutate(CountPer10M =  Count/Pop*10000000)
+
 tmp <- natData$Nation %>%
   unique() %>%
   as.data.frame()
@@ -124,10 +127,12 @@ europe_gg
 
 ```{r GGPlot Log Scaled}
 #PLot with log scale
-europe_gg_log <- natData %>%
+world_gg_log <- natData %>%
   ggplot(aes(x=long, y=lat, group = group, 
+             text = paste0('Country: ', Nation, 
+                          '<br>', 'Players Per 10 Million People: ', round(CountPer10M,2)),
              # fill = Count/Pop*1000000+(0.01/1000000)
-             fill = Count/Pop*1000000
+             fill = CountPer10M
              # fill = Count
              )) + 
     geom_polygon() + 
@@ -137,72 +142,41 @@ europe_gg_log <- natData %>%
     # scale_fill_gradientn(colours = myPal,
     #                     trans = "log", breaks = c(0.1,1,7),
     #                     name = "Players Per Million") +
-    scale_fill_viridis(option = "magma",
-                       breaks = c(0.0005, 0.05, 5), 
+    scale_fill_viridis(option = "viridis",
+                       breaks = c(0.001, 0.1, 10), 
                        trans = scales::pseudo_log_trans(sigma = 0.001),
-                       name = "Players Per Million Inhabitants",
+                       name = paste0("Players Per", 
+                                    "\n", 
+                                    "10M Pop"),
                        labels = scales::scientific)+
     ggtitle("Where Are Footballers in the Top 5 Leagues From?",
             # subtitle = "\n"
             ) + 
     theme(
-      #  plot.background = element_rect(fill  = lighten("#F7A072",0.8)),
+       plot.background = element_rect(fill  = "#EFEFEF"),
+       panel.background = element_rect(fill  = "#EFEFEF"),
       # legend.position = c(0.177,1.03),
       # legend.direction = "horizontal",
       # legend.margin = margin(0),
-      # legend.background = element_rect(fill =myPal["back_color"]),
-      legend.position = "bottom",
+      legend.background = element_rect(fill  = "#EFEFEF"),
+      # legend.position = "bottom",
       panel.grid = element_blank(), 
-      # panel.background = element_rect(fill  = lighten("#F7A072",0.8)),
-      panel.background = element_rect(fill  = lighten("white",0.9)),
+      # panel.background = element_rect(fill  = lighten("#757780",0.8)),
       axis.ticks = element_blank(),
       axis.title = element_blank(),
       axis.text = element_blank()
     )
 
-europe_gg_log
+world_gg_log
 
 
 
 ```
-```{r GGPlot Zoomed in On Europe and Log Scaled}
-#PLot with log scale
-europe_gg_log <- natData %>%
-  ggplot(aes(x=long, y=lat, group = group, 
-             fill = Count/Pop*1000000+(0.01/1000000)
-             # fill = Count/Pop*1000000
-             # fill = Count
-             )) + 
-    geom_polygon() + 
-    # coord_fixed(xlim = c(-15,40),
-    #             ylim = c(35, 65))+
-    # scale_fill_distiller(palette = "Blues", direction = 1) +
-    scale_fill_gradientn(colours = myPal,
-                        trans = "log", breaks = c(0,0.0005,0.05,5),
-                        name = "Players Per Million") +
-    # scale_fill_viridis_c(breaks = c(0.005, 0.5, 5), 
-    #                      trans = scales::pseudo_log_trans(sigma = 0.001),
-    #                      name = "Players Per Million")+
-    ggtitle("Where Are Footballers in the Top 5 Leagues From?") + 
-    theme(
-      #  plot.background = element_rect(fill  = lighten("#F7A072",0.8)),
-      panel.grid = element_blank(), 
-      # panel.background = element_rect(fill  = lighten("#F7A072",0.8)),
-      panel.background = element_rect(fill  = lighten("#594f3b",0.9)),
-      axis.ticks = element_blank(),
-      axis.title = element_blank(),
-      axis.text = element_blank()
-    )
 
-europe_gg_log
-
-
-
-```
 ```{r 3D GGPlot Zoomed in On Europe}
- ggplotly(europe_gg)
+world_plotly_log <- ggplotly(world_gg_log, tooltip = "text")
 
-
+world_plotly_log
 ```
 
 
