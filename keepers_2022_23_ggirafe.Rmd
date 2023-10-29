@@ -202,8 +202,9 @@ plot_func <- function(Data, X, Y,
                       ZeroLineColor=NULL) {
 
  Data$tooltip <- c(paste0("Name = ", Data$Name,
-                        "\n Age = ", Data$Age, 
-                        "\n Matches = ", Data$Matches))
+                          "\n Team = ", Data$Squad,
+                          "\n Age = ", Data$Age, 
+                          "\n Matches = ", Data$Matches))
  
  p <- ggplot(Data, aes(x=X, y=Y, color=Age_Category)) +
     geom_point_interactive(tooltip = Data$tooltip, 
