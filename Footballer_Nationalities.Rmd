@@ -40,21 +40,52 @@ footballers <- fb_big5_advanced_season_stats(season_end_year= 2023, stat_type= "
 #Load coutnry abbreviations matched to names so we can get full names
 fifaCodes <- read.csv(here("Europe_Borders/Fifa_Country_Codes.csv"))
 
-#Load world population data
-popData <- world_bank_pop %>%
-  mutate(Nation = countrycode(country, origin = "iso3c", destination="country.name.en")) %>% #Get country name from code
-  filter(indicator == "SP.POP.TOTL") %>% #Take only total population
-  select("Pop" = "2017", #Take most recent year available
-         "Nation") %>%
+# #Load world population data driectly into R
+# popData <- world_bank_pop %>%
+#   mutate(Nation = countrycode(country, origin = "iso3c", destination="country.name.en")) %>% #Get country name from code
+#   filter(indicator == "SP.POP.TOTL") %>% #Take only total population
+#   select("Pop" = "2017", #Take most recent year available
+#          "Nation") %>%
+#   #Make some names match the names in the other datasets
+#   mutate(Nation = case_when(
+#     Nation == "United Kingdom" ~ "UK",
+#     Nation == "United States" ~ "USA",
+#     Nation == "Bosnia & Herzegovina" ~ "Bosnia and Herzegovina",
+#     Nation == "Ivory Coast" ~  "Côte d’Ivoire",
+#     Nation == "Czechia" ~ "Czech Republic",
+#     Nation == "Myanmar (Burma)" ~ "Myanmar",
+#     Nation == "Ireland" ~ "Republic of Ireland",
+#     # Nation == "French Guiana" ~ "" #French guiana and DRC appear missing from pop data
+#     TRUE ~ Nation
+#     )
+#   )
+
+
+#Load downloaded world population data (https://databank.worldbank.org/source/population-estimates-and-projections)
+popData <- read.csv(here("Europe_Borders/WB_Population_2022.csv")) %>%
+  rename( "Nation" = "Country.Name") %>%
   #Make some names match the names in the other datasets
-  mutate(Nation = case_when(       
-    Nation == "United Kingdom" ~ "UK", 
+  mutate(Nation = case_when(
+    Nation == "United Kingdom" ~ "UK",
     Nation == "United States" ~ "USA",
     Nation == "Bosnia & Herzegovina" ~ "Bosnia and Herzegovina",
-    Nation == "Ivory Coast" ~  "Côte d’Ivoire",
+    Nation == "Cote d'Ivoire" ~  "Ivory Coast",
     Nation == "Czechia" ~ "Czech Republic",
-    Nation == "Myanmar (Burma)" ~ "Myanmar",
-    # Nation == "French Guiana" ~ "" #French guiana and DRC appear missing from pop data
+    Nation == "Ireland" ~ "Republic of Ireland",
+    Nation == "Congo, Dem. Rep." ~ "Democratic Republic of the Congo",
+    Nation == "Congo, Rep." ~ "Republic of Congo",
+    Nation == "Russian Federation" ~ "Russia",
+    Nation == "Yemen, Rep." ~ "Yemen",
+    Nation == "Egypt, Arab Rep." ~ "Egypt",
+    Nation == "Syrian Arab Republic" ~ "Syria",
+    Nation == "Turkiye" ~ "Turkey",
+    Nation == "Iran, Islamic Rep." ~ "Iran",
+    Nation == "Venezuela, RB" ~ "Venezuela",
+    Nation == "Slovak Republic" ~ "Slovakia",
+    Nation == "Kyrgyz Republic" ~ "Kyrgyzstan",
+    Nation == "Korea, Dem. People's Rep." ~ "North Korea",
+    Nation == "Korea, Rep." ~ "South Korea",
+    Nation == "Lao PDR" ~ "Laos",
     TRUE ~ Nation
     )
   )
@@ -63,9 +94,38 @@ popData <- world_bank_pop %>%
 
 #Load country polygons
 borders <- map_data("world") %>%
-  rename(Nation = region)
+  rename(Nation = region) %>%
+   mutate(Nation = case_when(       
+    Nation == "Ireland" ~ "Republic of Ireland",
+    # Nation == "Ivory Coast" ~  "Côte d’Ivoire",
+    TRUE ~ Nation
+    )
+  )
 
 myPal <- brewer.pal("GnBu", n=9)
+
+footballersNats <- footballers %>%
+    mutate(Nation = case_when(
+    Nation %in% c("ENG", "SCO","NIR", "WAL") ~ "UK", 
+    TRUE ~ Nation
+    )
+  ) %>%
+  group_by(Nation) %>%
+  summarise(Count = n()) %>%
+  #Give full country names
+  rename(Nation_Code = Nation) %>%
+  left_join(fifaCodes, by="Nation_Code") %>%
+  mutate(Nation = case_when(
+    Nation_Code == "UK" ~ "UK", 
+    TRUE ~ Nation
+    )
+  )
+
+bordersNats <- borders$Nation %>% unique() %>% as.data.frame()
+
+tmp2 <- footballers$Nation %>%
+  unique() %>%
+  as.data.frame()
 
 ```
 
@@ -84,7 +144,10 @@ natData <- footballers %>%
   rename(Nation_Code = Nation) %>%
   left_join(fifaCodes, by="Nation_Code") %>%
   mutate(Nation = case_when(
-    Nation_Code == "UK" ~ "UK", 
+    Nation_Code == "UK" ~ "UK",
+    Nation_Code == "COD" ~ "Democratic Republic of the Congo",
+    Nation_Code == "CGO" ~ "Republic of Congo",
+    Nation_Code == "KOR" ~ "South Korea",
     TRUE ~ Nation
     )
   ) %>%
@@ -98,7 +161,7 @@ natData$Count[is.na(natData$Count)] <- 0
 natData <- natData %>%
   mutate(CountPer10M =  Count/Pop*10000000)
 
-tmp <- natData$Nation %>%
+natDataNats <- natData$Nation %>%
   unique() %>%
   as.data.frame()
 
