@@ -1,7 +1,7 @@
 ---
-title: "Footballers' Nationalities"
+title: "Visualizing Where Footballers in The Top 5 Leagues Are From"
 author: "Gregory Vander Vinne"
-date: "2023-10-14"
+date: "2023-10-29"
 output:
   html_document:
     # code_folding: 'hide'
@@ -10,7 +10,9 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+#No messages and warnings in HTML output
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo = FALSE,
+                      fig.width = 10, fig.height = 7)
 ```
 
 ```{r Load Packages and Data, include=FALSE}
@@ -23,7 +25,8 @@ pacman::p_load(
   tidyverse,     # data management and visualization
   showtext,      # help with downloaded fonts  
   systemfonts,   # use downloaded fonts
-  eurostat,      # get list of european countries  
+  showtext,      # help with fonts 
+  ggtext,        # Prettier titles etc
   here,          # relative file pathways
   RColorBrewer,  # effective color palettes  
   rayshader,     # 3d plots
@@ -127,6 +130,11 @@ tmp2 <- footballers$Nation %>%
   unique() %>%
   as.data.frame()
 
+#Add Roboto font family
+font_add(family = "Cabin", 
+         regular = "C:/USERS/GVAND/APPDATA/LOCAL/MICROSOFT/WINDOWS/FONTS/Cabin-VariableFont_wdth,wght.ttf")
+showtext_auto()
+
 ```
 
 ```{r Wrangle Data}
@@ -169,17 +177,21 @@ natDataNats <- natData$Nation %>%
 
 ```{r GGPlot Zoomed in On Europe}
 #Plot ggplot of just europe
-europe_gg <- ggplot(natData, aes(x=long, y=lat, group = group, fill = Count)) + 
-  geom_polygon() + 
+europe_gg <- ggplot(natData, aes(x=long, y=lat, group = group, fill = Count)) +
+  geom_polygon() +
   coord_fixed(xlim = c(-15,25),
               ylim = c(35, 65))+
   scale_fill_distiller(palette = "Blues", direction = 1) +
   theme(
     plot.background = element_rect(fill  = "white"),
-    panel.grid = element_blank(), 
+    panel.grid = element_blank(),
     panel.background = element_blank(),
     axis.ticks = element_blank(),
     axis.title = element_blank(),
+    plot.title = ggtext::element_textbox_simple(family = "Cabin",
+                                                size = 17,
+                                                face = "bold",
+                                                halign = 0, colour = "#0a0903")
     # axis.text = element_blank()
   )
 
@@ -206,12 +218,12 @@ world_gg_log <- natData %>%
     #                     trans = "log", breaks = c(0.1,1,7),
     #                     name = "Players Per Million") +
     scale_fill_viridis(option = "viridis",
-                       breaks = c(0.001, 0.1, 10), 
+                       breaks = c(0, 0.2, 20), 
                        trans = scales::pseudo_log_trans(sigma = 0.001),
                        name = paste0("Players Per", 
                                     "\n", 
                                     "10M Pop"),
-                       labels = scales::scientific)+
+                       labels = scales::comma)+
     ggtitle("Where Are Footballers in the Top 5 Leagues From?",
             # subtitle = "\n"
             ) + 
@@ -230,7 +242,7 @@ world_gg_log <- natData %>%
       axis.text = element_blank()
     )
 
-world_gg_log
+# world_gg_log
 
 
 
@@ -241,17 +253,5 @@ world_plotly_log <- ggplotly(world_gg_log, tooltip = "text")
 
 world_plotly_log
 ```
-
-
-# ```{r 3D GGPlot Zoomed in On Europe}
-# 
-# 
-# plot_gg(europe_gg)
-# 
-# 
-# ```
-
-
-
 
 
