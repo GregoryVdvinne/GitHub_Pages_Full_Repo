@@ -27,6 +27,7 @@ pacman::p_load(
   systemfonts,   # use downloaded fonts
   showtext,      # help with fonts 
   ggtext,        # Prettier titles etc
+  ggiraph,
   here,          # relative file pathways
   RColorBrewer,  # effective color palettes  
   rayshader,     # 3d plots
@@ -135,6 +136,8 @@ font_add(family = "Cabin",
          regular = "C:/USERS/GVAND/APPDATA/LOCAL/MICROSOFT/WINDOWS/FONTS/Cabin-VariableFont_wdth,wght.ttf")
 showtext_auto()
 
+light_text <- "grey30"
+dark_text <- "#0a0903"
 ```
 
 ```{r Wrangle Data}
@@ -239,7 +242,15 @@ world_gg_log <- natData %>%
       # panel.background = element_rect(fill  = lighten("#757780",0.8)),
       axis.ticks = element_blank(),
       axis.title = element_blank(),
-      axis.text = element_blank()
+      axis.text = element_blank(),
+      legend.text = element_text(color = dark_text, 
+                                 family = "Cabin", 
+                                 ),
+      plot.title = element_text(color = dark_text, 
+                                family = "Cabin", 
+                                size = 17,
+                                margin = margin(6, 6, 15, 6)
+                                ),
     )
 
 # world_gg_log
@@ -248,10 +259,77 @@ world_gg_log <- natData %>%
 
 ```
 
-```{r 3D GGPlot Zoomed in On Europe}
+```{r 3D Plotly}
 world_plotly_log <- ggplotly(world_gg_log, tooltip = "text")
 
 world_plotly_log
 ```
 
+```{r Bar Plot}
+#carathompson.com/talks/nhsr2022-ggplot-themes/
 
+#Slice not working
+mostPlayers <- natData %>%
+  group_by(Nation) %>%
+  slice_sample(n=1) %>% #Keep just one row per country
+  select(Count, CountPer10M, Nation) %>%
+  ungroup()
+
+mostPlayers$tooltip <- c(paste0("Country = ", mostPlayers$Nation,
+                                "\n Players Per 10 Millino People = ", mostPlayers$CountPer10M,
+                                "\n Total Players = ", mostPlayers$Count, 
+                                "\n Population = ", mostPlayers$Pop))
+
+mostPlayers %>%
+  slice_max(CountPer10M, n=10) %>%
+  arrange(CountPer10M) %>%
+  ggplot(aes(x=reorder(Nation, desc(CountPer10M)), y=CountPer10M))+
+    geom_col(fill = viridis::viridis_pal()(5)[3]) +
+    geom_text(aes(label=round(CountPer10M,1), vjust = -0.25),
+              family = "Cabin", size = 4, color = light_text) +
+    labs(title = "The Ten Countries With the Most Footballers In the Top Five Leagues for Their Population",
+         subtitle = "While Croatia, Spain, and Uruguay clearly produce a disproportionaltley large share of the world's best footballers, countries like Grenada and Iceland are harder to draw conclusions about because their small populations allow them to be in the top then with just one or two players",
+         caption = "Data Source: FBref.com, 2022-23 Season, Standard Statistics") +
+    ylab("Footballers in The Top Five Leagues Per 10 Million People") +
+    theme_minimal() +
+    theme(
+       plot.background = element_rect(fill  = "#EFEFEF", color = "#EFEFEF"),
+       panel.background = element_rect(fill  = "#EFEFEF", color = "#EFEFEF"),
+      # legend.position = c(0.177,1.03),
+      # legend.direction = "horizontal",
+      # legend.margin = margin(0),
+      # legend.background = element_rect(fill  = "#EFEFEF"),
+      # legend.position = "bottom",
+      panel.grid = element_blank(), 
+      axis.ticks = element_blank(),
+      plot.title.position = "plot",
+      plot.caption.position = "plot",
+      plot.title = ggtext::element_textbox_simple(color = dark_text, 
+                                family = "Cabin", 
+                                size = 17,
+                                margin = margin(6, 6, 15, 6)
+                                ),
+      plot.subtitle = ggtext::element_textbox_simple(color = light_text, 
+                                                    family = "Cabin", 
+                                                    size = 12,
+                                                    margin = margin(0,6,15,6)),
+      axis.title.x = element_blank(),       
+      axis.title.y = element_text(color = light_text, 
+                                  family = "Cabin", 
+                                  size = 12,
+                                  margin = margin(0,8,0,6)),
+      axis.text = element_text(color = light_text, 
+                               family = "Cabin", 
+                               size = 10,
+                               margin = margin(0,0,4,0)),
+      plot.caption = element_text(color = light_text, 
+                                  family = "Cabin", 
+                                  size = 9,
+                                  margin = margin(8,0,4,4),
+                                  hjust = 0)
+    )
+
+
+
+
+```
