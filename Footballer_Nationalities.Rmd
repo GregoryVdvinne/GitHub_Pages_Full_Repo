@@ -204,6 +204,12 @@ europe_gg
 ```
 
 ```{r GGPlot Log Scaled}
+#Setup for tooltip
+natData$tooltip <- c(paste0("Country: ", natData$Nation,
+                                "\n Players Per 10 Million People: ", round(natData$CountPer10M,1),
+                                "\n Total Players: ", natData$Count, 
+                                "\n Population: ", scales::comma(natData$Pop)))
+
 #PLot with log scale
 world_gg_log <- natData %>%
   ggplot(aes(x=long, y=lat, group = group, 
@@ -213,7 +219,8 @@ world_gg_log <- natData %>%
              fill = CountPer10M
              # fill = Count
              )) + 
-    geom_polygon() + 
+    geom_polygon_interactive(tooltip = natData$tooltip,
+                             data_id = natData$tooltip) + 
     # coord_fixed(xlim = c(-15,40),
     #             ylim = c(35, 65))+
     # scale_fill_distiller(palette = "Blues", direction = 1) +
@@ -227,30 +234,42 @@ world_gg_log <- natData %>%
                                     "\n", 
                                     "10M Pop"),
                        labels = scales::comma)+
-    ggtitle("Where Are Footballers in the Top 5 Leagues From?",
+    ggtitle("Number of Players in the Top Five Leagues as a Share of Population",
             # subtitle = "\n"
             ) + 
+    theme_minimal() +
     theme(
-       plot.background = element_rect(fill  = "#EFEFEF"),
-       panel.background = element_rect(fill  = "#EFEFEF"),
+       plot.background = element_rect(fill  = "#EFEFEF", color = "#EFEFEF"),
+       panel.background = element_rect(fill  = "#EFEFEF", color = "#EFEFEF"),
       # legend.position = c(0.177,1.03),
       # legend.direction = "horizontal",
       # legend.margin = margin(0),
-      legend.background = element_rect(fill  = "#EFEFEF"),
+      # legend.background = element_rect(fill  = "#EFEFEF"),
       # legend.position = "bottom",
       panel.grid = element_blank(), 
-      # panel.background = element_rect(fill  = lighten("#757780",0.8)),
       axis.ticks = element_blank(),
-      axis.title = element_blank(),
-      axis.text = element_blank(),
-      legend.text = element_text(color = dark_text, 
-                                 family = "Cabin", 
-                                 ),
-      plot.title = element_text(color = dark_text, 
+      plot.title.position = "plot",
+      plot.caption.position = "plot",
+      plot.title = ggtext::element_textbox_simple(color = dark_text, 
                                 family = "Cabin", 
-                                size = 17,
+                                size = 24,
                                 margin = margin(6, 6, 15, 6)
                                 ),
+      plot.subtitle = ggtext::element_textbox_simple(color = light_text, 
+                                                    family = "Cabin", 
+                                                    size = 12,
+                                                    margin = margin(0,6,15,6)),
+      axis.title = element_blank(),
+      axis.text = element_blank(),
+      plot.caption = element_text(color = light_text, 
+                                  family = "Cabin", 
+                                  size = 9,
+                                  margin = margin(8,0,4,4),
+                                  hjust = 0),
+      legend.text = element_text(color = light_text, 
+                                 family = "Cabin", 
+                                 size = 10,
+                                 margin = margin(0,0,4,0)),
     )
 
 # world_gg_log
@@ -259,10 +278,10 @@ world_gg_log <- natData %>%
 
 ```
 
-```{r 3D Plotly}
-world_plotly_log <- ggplotly(world_gg_log, tooltip = "text")
 
-world_plotly_log
+```{r Ggiraph Map}
+girafe(ggobj = world_gg_log) %>%
+  girafe_options(opts_zoom(max = 5))
 ```
 
 ```{r Bar Plot}
@@ -272,23 +291,26 @@ world_plotly_log
 mostPlayers <- natData %>%
   group_by(Nation) %>%
   slice_sample(n=1) %>% #Keep just one row per country
-  select(Count, CountPer10M, Nation) %>%
+  select(Count, CountPer10M, Nation, Pop) %>%
   ungroup()
 
-mostPlayers$tooltip <- c(paste0("Country = ", mostPlayers$Nation,
-                                "\n Players Per 10 Millino People = ", mostPlayers$CountPer10M,
-                                "\n Total Players = ", mostPlayers$Count, 
-                                "\n Population = ", mostPlayers$Pop))
+mostPlayers$tooltip <- c(paste0("Country: ", mostPlayers$Nation,
+                                "\n Players Per 10 Million People: ", round(mostPlayers$CountPer10M,1),
+                                "\n Total Players: ", mostPlayers$Count, 
+                                "\n Population: ", scales::comma(mostPlayers$Pop)))
 
-mostPlayers %>%
+test <- mostPlayers %>%
   slice_max(CountPer10M, n=10) %>%
   arrange(CountPer10M) %>%
-  ggplot(aes(x=reorder(Nation, desc(CountPer10M)), y=CountPer10M))+
-    geom_col(fill = viridis::viridis_pal()(5)[3]) +
+  {
+  ggplot(.,aes(x=reorder(Nation, desc(CountPer10M)), y=CountPer10M))+
+    geom_col_interactive(fill = viridis::viridis_pal()(5)[3],
+                         tooltip = .$tooltip,
+                         data_id = .$tooltip) +
     geom_text(aes(label=round(CountPer10M,1), vjust = -0.25),
               family = "Cabin", size = 4, color = light_text) +
-    labs(title = "The Ten Countries With the Most Footballers In the Top Five Leagues for Their Population",
-         subtitle = "While Croatia, Spain, and Uruguay clearly produce a disproportionaltley large share of the world's best footballers, countries like Grenada and Iceland are harder to draw conclusions about because their small populations allow them to be in the top then with just one or two players",
+    labs(title = "Kicking Above Their Weight Class",
+         subtitle = "This plot shows the ten countries that have the greatest number of footballers in the top five leagues as a share of their population. While Croatia, Spain, and Uruguay clearly produce a disproportionaltley large share of the world's best footballers, countries like Grenada and Iceland are harder to draw conclusions about because their small populations put them in the top ten with just one or two players.",
          caption = "Data Source: FBref.com, 2022-23 Season, Standard Statistics") +
     ylab("Footballers in The Top Five Leagues Per 10 Million People") +
     theme_minimal() +
@@ -306,7 +328,7 @@ mostPlayers %>%
       plot.caption.position = "plot",
       plot.title = ggtext::element_textbox_simple(color = dark_text, 
                                 family = "Cabin", 
-                                size = 17,
+                                size = 24,
                                 margin = margin(6, 6, 15, 6)
                                 ),
       plot.subtitle = ggtext::element_textbox_simple(color = light_text, 
@@ -328,8 +350,9 @@ mostPlayers %>%
                                   margin = margin(8,0,4,4),
                                   hjust = 0)
     )
+    }
 
-
+girafe(ggobj = test)
 
 
 ```
