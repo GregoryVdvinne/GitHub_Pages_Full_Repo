@@ -36,36 +36,21 @@ pacman::p_load(
   colorspace,    # fancy work with colors like darken, lighten, & swatchplot
   countrycode,   # iso codes and country names
   viridis,       # better map colors
-  worldfootballR # football statistics
+  worldfootballR,# football statistics
+  feather        # light weight files
 )
 
-#Download basic player-level stats from FbRef for 2020-21 to 2022-23 seasons
-footballers <- fb_big5_advanced_season_stats(season_end_year= 2023, stat_type= "standard", team_or_player= "player")
+# #Download basic player-level stats from FbRef for 2020-21 to 2022-23 seasons
+# footballers <- fb_big5_advanced_season_stats(season_end_year= 2023, stat_type= "standard", team_or_player= "player")
+# #Save downloaded data as feather file
+# write_feather(footballers, 
+#               here("Europe_Borders/footballers.feather"))
+
+#Load downloaded footballer data
+footballers <- read_feather(here("Europe_Borders/footballers.feather"))
 
 #Load coutnry abbreviations matched to names so we can get full names
 fifaCodes <- read.csv(here("Europe_Borders/Fifa_Country_Codes.csv"))
-
-### Replaced because the latest year accesible this way is 2017
-# #Load world population data driectly into R
-# popData <- world_bank_pop %>%
-#   mutate(Nation = countrycode(country, origin = "iso3c", destination="country.name.en")) %>% #Get country name from code
-#   filter(indicator == "SP.POP.TOTL") %>% #Take only total population
-#   select("Pop" = "2017", #Take most recent year available
-#          "Nation") %>%
-#   #Make some names match the names in the other datasets
-#   mutate(Nation = case_when(
-#     Nation == "United Kingdom" ~ "UK",
-#     Nation == "United States" ~ "USA",
-#     Nation == "Bosnia & Herzegovina" ~ "Bosnia and Herzegovina",
-#     Nation == "Ivory Coast" ~  "Côte d’Ivoire",
-#     Nation == "Czechia" ~ "Czech Republic",
-#     Nation == "Myanmar (Burma)" ~ "Myanmar",
-#     Nation == "Ireland" ~ "Republic of Ireland",
-#     # Nation == "French Guiana" ~ "" #French guiana and DRC appear missing from pop data
-#     TRUE ~ Nation
-#     )
-#   )
-
 
 #Load downloaded world population data (https://databank.worldbank.org/source/population-estimates-and-projections)
 popData <- read.csv(here("Europe_Borders/WB_Population_2022.csv")) %>%
@@ -248,7 +233,7 @@ world_gg_log <- natData %>%
       plot.caption = element_text(color = light_text, 
                                   family = "Cabin", 
                                   size = 9,
-                                  margin = margin(8,6,4,6),
+                                  margin = margin(0,6,4,6),
                                   hjust = c(0,1)), #One in bottom-left, one in bottom-right
       legend.text = element_text(color = light_text, 
                                  family = "Cabin", 
@@ -331,7 +316,7 @@ test <- mostPlayers %>%
       plot.caption = element_text(color = light_text, 
                                   family = "Cabin", 
                                   size = 9,
-                                  margin = margin(8,0,4,6),
+                                  margin = margin(15,0,4,6),
                                   hjust = c(0,1))
     )
     }
@@ -342,10 +327,10 @@ girafe(ggobj = test)
 ```
 European countries, specifically western European countries and Balkan countries, generally produce the most players per capita, while South American countries and west African countries also produce more than their fair share. While the lack of players from most Asian countries was unsurprising to me, I found the near-total lack of players in east Africa quite surprising, especially considering the relatively high number of players from many west African countries. 
 
-Croatia and Spain produce very disproportionately large numbers of players. These two countries are also in regions where other countries are producing disproportionately large numbers of players as well. To me, Uruguay is the most stunning. Producing the third highest number of players per capita is impressive enough, but the fact that, on a per captia basis, they produce players at nearly five times the rate of neighbouring Argentina and approximately 17 times the rate of neighbouring Brazil is astonishing.    
+Croatia and Spain produce very disproportionately large numbers of players. These two countries are also in regions where other countries produce disproportionately large numbers of players as well. To me, Uruguay is the most stunning. Producing the third highest number of players per capita is impressive enough, but the fact that on a per captia basis they produce players at nearly five times the rate of neighbouring Argentina and approximately seventeen times the rate of neighbouring Brazil is astonishing.    
 
-The countries of the top five leagues themselves may have slightly higher numbers than they otherwise would due to rules surrounding home-grown players; these are rules that encourage or force teams to have players from the league's home country. Furthermore, countries with strong domestic leagues that aren't the top five leagues may have fewer players than countries with weaker domestic leagues. For example, a dutch player who is good enough to play in the top five leagues may choose to play in the Eeredivisie anyway just because it is home, whereas an Icelandic player good enough to play in the top five leagues will almost certainly not play in the Icelandic league because it is too weak. It is also a slight limitation that I had to group the UK together as one rather than separating it into England, Scotland, Wales, and Northern Ireland.
+The countries of the top five leagues themselves may have slightly higher numbers than they otherwise would due to rules surrounding home-grown players; these are rules that encourage teams to have players from the league's home country. Furthermore, countries with strong domestic leagues that aren't the top five leagues may have fewer players than countries with weaker domestic leagues. For example, a Turkish player who is good enough to play in the top five leagues may choose to play for a top Turkish team because they would rather stay close to home. However an Icelandic player good enough to play in the top five leagues will almost certainly not play in the Icelandic league because it is too weak. Last, it is worth noting that I had to group the UK together as one rather than separating it into England, Scotland, Wales, and Northern Ireland.
 
-Of course, the causes of the differences in the numbers of players produced by different countries are Myriad. In the book *Soccernomics* by Simon Kuper and Stefan Szymanski, there is an interesting discussion of many such factors including culture, history, and economic strength. 
+Of course, the causes of the differences in the numbers of players produced by different countries are myriad. In the book *Soccernomics* by Simon Kuper and Stefan Szymanski, there is an interesting discussion of many such factors including culture, history, and economic strength. 
 
 In the future, I would like to also do this for female players, or perhaps both genders combined, but there is not, to my knowledge, as standard of a definition of the top X leagues in the women's game. If any readers are aware of a way I could look at this, feel free to contact me.    
