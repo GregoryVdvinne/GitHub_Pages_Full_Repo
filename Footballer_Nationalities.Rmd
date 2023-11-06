@@ -1,13 +1,17 @@
 ---
-title: "Visualizing Where Footballers in The Top 5 Leagues Are From"
+title: "Which Countries Produce Disproportionate Numbers of Top Footballers?"
 author: "Gregory Vander Vinne"
-date: "2023-10-29"
+date: "2023-11-5"
 output:
   html_document:
     # code_folding: 'hide'
     toc: true
     toc_float: false
 ---
+
+As somebody who is interested in both geography and football (soccer), I thought it would be interesting to see which countries produce the greatest numbers of top footballers. Fbref.com already does a good job of laying out which countries account for the greatest numbers of players (https://fbref.com/en/comps/Big5/nations/Big-5-European-Leagues-Nationalities). Unsurprisingly, the five countries that produce the highest sheer number of players are the countries of the top five leagues themselves (Spain, France, Italy Germany and England, in that order), while Brazil, Argentina, the Netherlands, Portugal and Belgium round out the top ten. 
+
+To get a better sense of which countries are the best at producing top level players in the men's game, I decided to examine which countries account for the most players in the top five leagues **as a share of their population.** 
 
 ```{r setup, include=FALSE}
 #No messages and warnings in HTML output
@@ -23,18 +27,15 @@ rm(list = ls(all = TRUE))
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(
   tidyverse,     # data management and visualization
-  showtext,      # help with downloaded fonts  
   systemfonts,   # use downloaded fonts
   showtext,      # help with fonts 
   ggtext,        # Prettier titles etc
-  ggiraph,
+  ggiraph,       # Interactive ggplots
   here,          # relative file pathways
   RColorBrewer,  # effective color palettes  
-  rayshader,     # 3d plots
-  colorspace,    # fancy work with colors like darken and lighten
+  colorspace,    # fancy work with colors like darken, lighten, & swatchplot
   countrycode,   # iso codes and country names
   viridis,       # better map colors
-  plotly,        # interactive plots
   worldfootballR # football statistics
 )
 
@@ -44,6 +45,7 @@ footballers <- fb_big5_advanced_season_stats(season_end_year= 2023, stat_type= "
 #Load coutnry abbreviations matched to names so we can get full names
 fifaCodes <- read.csv(here("Europe_Borders/Fifa_Country_Codes.csv"))
 
+### Replaced because the latest year accesible this way is 2017
 # #Load world population data driectly into R
 # popData <- world_bank_pop %>%
 #   mutate(Nation = countrycode(country, origin = "iso3c", destination="country.name.en")) %>% #Get country name from code
@@ -106,8 +108,6 @@ borders <- map_data("world") %>%
     )
   )
 
-myPal <- brewer.pal("GnBu", n=9)
-
 footballersNats <- footballers %>%
     mutate(Nation = case_when(
     Nation %in% c("ENG", "SCO","NIR", "WAL") ~ "UK", 
@@ -125,19 +125,27 @@ footballersNats <- footballers %>%
     )
   )
 
+#For inspecting country names attached to polygons. e.g. UK vs United Kingdom
 bordersNats <- borders$Nation %>% unique() %>% as.data.frame()
 
+#For inspecting country names attached footballer data. e.g. UK vs United Kingdom
 tmp2 <- footballers$Nation %>%
   unique() %>%
   as.data.frame()
 
-#Add Roboto font family
+#Add Cabin font family
 font_add(family = "Cabin", 
          regular = "C:/USERS/GVAND/APPDATA/LOCAL/MICROSOFT/WINDOWS/FONTS/Cabin-VariableFont_wdth,wght.ttf")
 showtext_auto()
 
+#Text colors for use in plots
 light_text <- "grey30"
 dark_text <- "#0a0903"
+
+#Save Caption for plots 
+myCaption <- c("Data Source: FBref.com 2022-23 Season Standard Statistics & World Bank 2022 Population Estimates",
+               "Created by Gregory Vander Vinne")
+
 ```
 
 ```{r Wrangle Data}
@@ -178,30 +186,6 @@ natDataNats <- natData$Nation %>%
 
 ```
 
-```{r GGPlot Zoomed in On Europe}
-#Plot ggplot of just europe
-europe_gg <- ggplot(natData, aes(x=long, y=lat, group = group, fill = Count)) +
-  geom_polygon() +
-  coord_fixed(xlim = c(-15,25),
-              ylim = c(35, 65))+
-  scale_fill_distiller(palette = "Blues", direction = 1) +
-  theme(
-    plot.background = element_rect(fill  = "white"),
-    panel.grid = element_blank(),
-    panel.background = element_blank(),
-    axis.ticks = element_blank(),
-    axis.title = element_blank(),
-    plot.title = ggtext::element_textbox_simple(family = "Cabin",
-                                                size = 17,
-                                                face = "bold",
-                                                halign = 0, colour = "#0a0903")
-    # axis.text = element_blank()
-  )
-
-europe_gg
-
-
-```
 
 ```{r GGPlot Log Scaled}
 #Setup for tooltip
@@ -234,9 +218,9 @@ world_gg_log <- natData %>%
                                     "\n", 
                                     "10M Pop"),
                        labels = scales::comma)+
-    ggtitle("Number of Players in the Top Five Leagues as a Share of Population",
-            # subtitle = "\n"
-            ) + 
+    labs(title = "Number of Players in the Top Five Leagues as a Share of Population",
+         caption = myCaption
+         ) + 
     theme_minimal() +
     theme(
        plot.background = element_rect(fill  = "#EFEFEF", color = "#EFEFEF"),
@@ -264,8 +248,8 @@ world_gg_log <- natData %>%
       plot.caption = element_text(color = light_text, 
                                   family = "Cabin", 
                                   size = 9,
-                                  margin = margin(8,0,4,4),
-                                  hjust = 0),
+                                  margin = margin(8,6,4,6),
+                                  hjust = c(0,1)), #One in bottom-left, one in bottom-right
       legend.text = element_text(color = light_text, 
                                  family = "Cabin", 
                                  size = 10,
@@ -281,7 +265,7 @@ world_gg_log <- natData %>%
 
 ```{r Ggiraph Map}
 girafe(ggobj = world_gg_log) %>%
-  girafe_options(opts_zoom(max = 5))
+  girafe_options(opts_zoom(max = 10))
 ```
 
 ```{r Bar Plot}
@@ -311,7 +295,7 @@ test <- mostPlayers %>%
               family = "Cabin", size = 4, color = light_text) +
     labs(title = "Kicking Above Their Weight Class",
          subtitle = "This plot shows the ten countries that have the greatest number of footballers in the top five leagues as a share of their population. While Croatia, Spain, and Uruguay clearly produce a disproportionaltley large share of the world's best footballers, countries like Grenada and Iceland are harder to draw conclusions about because their small populations put them in the top ten with just one or two players.",
-         caption = "Data Source: FBref.com, 2022-23 Season, Standard Statistics") +
+         caption = myCaption) +
     ylab("Footballers in The Top Five Leagues Per 10 Million People") +
     theme_minimal() +
     theme(
@@ -347,8 +331,8 @@ test <- mostPlayers %>%
       plot.caption = element_text(color = light_text, 
                                   family = "Cabin", 
                                   size = 9,
-                                  margin = margin(8,0,4,4),
-                                  hjust = 0)
+                                  margin = margin(8,0,4,6),
+                                  hjust = c(0,1))
     )
     }
 
@@ -356,3 +340,12 @@ girafe(ggobj = test)
 
 
 ```
+European countries, specifically western European countries and Balkan countries, generally produce the most players per capita, while South American countries and west African countries also produce more than their fair share. While the lack of players from most Asian countries was unsurprising to me, I found the near-total lack of players in east Africa quite surprising, especially considering the relatively high number of players from many west African countries. 
+
+Croatia and Spain produce very disproportionately large numbers of players. These two countries are also in regions where other countries are producing disproportionately large numbers of players as well. To me, Uruguay is the most stunning. Producing the third highest number of players per capita is impressive enough, but the fact that, on a per captia basis, they produce players at nearly five times the rate of neighbouring Argentina and approximately 17 times the rate of neighbouring Brazil is astonishing.    
+
+The countries of the top five leagues themselves may have slightly higher numbers than they otherwise would due to rules surrounding home-grown players; these are rules that encourage or force teams to have players from the league's home country. Furthermore, countries with strong domestic leagues that aren't the top five leagues may have fewer players than countries with weaker domestic leagues. For example, a dutch player who is good enough to play in the top five leagues may choose to play in the Eeredivisie anyway just because it is home, whereas an Icelandic player good enough to play in the top five leagues will almost certainly not play in the Icelandic league because it is too weak. It is also a slight limitation that I had to group the UK together as one rather than separating it into England, Scotland, Wales, and Northern Ireland.
+
+Of course, the causes of the differences in the numbers of players produced by different countries are Myriad. In the book *Soccernomics* by Simon Kuper and Stefan Szymanski, there is an interesting discussion of many such factors including culture, history, and economic strength. 
+
+In the future, I would like to also do this for female players, or perhaps both genders combined, but there is not, to my knowledge, as standard of a definition of the top X leagues in the women's game. If any readers are aware of a way I could look at this, feel free to contact me.    
