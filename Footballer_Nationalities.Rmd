@@ -77,6 +77,7 @@ popData <- read.csv(here("Europe_Borders/WB_Population_2022.csv")) %>%
     Nation == "Korea, Dem. People's Rep." ~ "North Korea",
     Nation == "Korea, Rep." ~ "South Korea",
     Nation == "Lao PDR" ~ "Laos",
+    Nation == "Gambia, The" ~ "Gambia",
     TRUE ~ Nation
     )
   )
@@ -221,7 +222,7 @@ world_gg_log <- natData %>%
       plot.caption.position = "plot",
       plot.title = ggtext::element_textbox_simple(color = dark_text, 
                                 family = "Cabin", 
-                                size = 24,
+                                size = 22,
                                 margin = margin(6, 6, 15, 6)
                                 ),
       plot.subtitle = ggtext::element_textbox_simple(color = light_text, 
@@ -250,7 +251,7 @@ world_gg_log <- natData %>%
 
 ```{r Ggiraph Map}
 girafe(ggobj = world_gg_log) %>%
-  girafe_options(opts_zoom(max = 10))
+  girafe_options(opts_zoom(max = 15))
 ```
 
 ```{r Bar Plot}
@@ -297,7 +298,7 @@ test <- mostPlayers %>%
       plot.caption.position = "plot",
       plot.title = ggtext::element_textbox_simple(color = dark_text, 
                                 family = "Cabin", 
-                                size = 24,
+                                size = 22,
                                 margin = margin(6, 6, 15, 6)
                                 ),
       plot.subtitle = ggtext::element_textbox_simple(color = light_text, 
@@ -325,12 +326,14 @@ girafe(ggobj = test)
 
 
 ```
-European countries, specifically western European countries and Balkan countries, generally produce the most players per capita, while South American countries and west African countries also produce more than their fair share. While the lack of players from most Asian countries was unsurprising to me, I found the near-total lack of players in east Africa quite surprising, especially considering the relatively high number of players from many west African countries. 
+European countries, specifically western European countries and Balkan countries, generally produce the most players per capita. South American countries and west African countries produce fewer players per capita but still contribute their fair share. Although the lack of players from most Asian countries was unsurprising to me, I found the near-total lack of players in east Africa quite surprising, especially considering the relatively high number of players from many west African countries. 
 
-Croatia and Spain produce very disproportionately large numbers of players. These two countries are also in regions where other countries produce disproportionately large numbers of players as well. To me, Uruguay is the most stunning. Producing the third highest number of players per capita is impressive enough, but the fact that on a per captia basis they produce players at nearly five times the rate of neighbouring Argentina and approximately seventeen times the rate of neighbouring Brazil is astonishing.    
+To me, Uruguay is the most stunning individual country. Producing the third highest number of players per capita is impressive enough, but the fact that on a per captia basis they produce players at nearly five times the rate of neighbouring Argentina and approximately seventeen times the rate of neighbouring Brazil is astonishing. While Croatia and Spain produce slightly more players per capita, they do not stand out as much from their respective geographic regions.   
 
-The countries of the top five leagues themselves may have slightly higher numbers than they otherwise would due to rules surrounding home-grown players; these are rules that encourage teams to have players from the league's home country. Furthermore, countries with strong domestic leagues that aren't the top five leagues may have fewer players than countries with weaker domestic leagues. For example, a Turkish player who is good enough to play in the top five leagues may choose to play for a top Turkish team because they would rather stay close to home. However an Icelandic player good enough to play in the top five leagues will almost certainly not play in the Icelandic league because it is too weak. Last, it is worth noting that I had to group the UK together as one rather than separating it into England, Scotland, Wales, and Northern Ireland.
+The countries of the top five leagues themselves may have slightly higher numbers than they otherwise would due to rules surrounding home-grown players; these are rules that encourage teams to have players from the league's home country. Furthermore, countries with strong domestic leagues that aren't the top five leagues may have fewer players than they would if they had weaker domestic leagues. For example, a Turkish player who is good enough to play in the top five leagues may choose to play for a top Turkish team because they would rather stay close to home. However an Icelandic player good enough to play in the top five leagues will almost certainly not play in the Icelandic league because it is too weak. 
 
-Of course, the causes of the differences in the numbers of players produced by different countries are myriad. In the book *Soccernomics* by Simon Kuper and Stefan Szymanski, there is an interesting discussion of many such factors including culture, history, and economic strength. 
+It is worth noting that I had to group the UK together as one rather than separating it into England, Scotland, Wales, and Northern Ireland.
 
-In the future, I would like to also do this for female players, or perhaps both genders combined, but there is not, to my knowledge, as standard of a definition of the top X leagues in the women's game. If any readers are aware of a way I could look at this, feel free to contact me.    
+Of course, the causes of the differences in the numbers of players produced by different countries are myriad. In the book *Soccernomics,* authors Simon Kuper and Stefan Szymanski, provide a discussion of the factors they believe play the most important roles in determining the success of a country's national team, including culture, history, and economic strength, among others. 
+
+In the future, I would like to produce similar visualizations for female players, or perhaps both genders combined. However, there is not, to my knowledge, as standard of a definition of the top X leagues in the women's game. If any readers are aware of a way I could look at this, feel free to contact me.    
