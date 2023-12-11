@@ -40,10 +40,10 @@ pacman::p_load(
   feather        # light weight files
 )
 
-# #Download basic player-level stats from FbRef for 2020-21 to 2022-23 seasons
+# # #Download basic player-level stats from FbRef for 2020-21 to 2022-23 seasons
 # footballers <- fb_big5_advanced_season_stats(season_end_year= 2023, stat_type= "standard", team_or_player= "player")
 # #Save downloaded data as feather file
-# write_feather(footballers, 
+# write_feather(footballers,
 #               here("Europe_Borders/footballers.feather"))
 
 #Load downloaded footballer data
