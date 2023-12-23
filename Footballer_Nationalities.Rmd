@@ -1,0 +1,339 @@
+---
+title: "Which Countries Produce Disproportionate Numbers of Top Footballers?"
+author: "Gregory Vander Vinne"
+date: "2023-11-5"
+output:
+  html_document:
+    # code_folding: 'hide'
+    toc: true
+    toc_float: false
+---
+
+As somebody who is interested in both geography and football (soccer), I thought it would be interesting to see which countries produce top footballers at the greatest frequency. Fbref.com already does a good job of laying out which countries account for the most players (https://fbref.com/en/comps/Big5/nations/Big-5-European-Leagues-Nationalities). Unsurprisingly, the five countries that produce the highest sheer number of players are the countries of the top five leagues themselves (Spain, France, Italy Germany and England, in that order), while Brazil, Argentina, the Netherlands, Portugal and Belgium round out the top ten. 
+
+To get a better sense of which countries are the best at producing top level players in the men's game, I decided to examine which countries account for the most players in the top five leagues *as a share of their population.* 
+
+```{r setup, include=FALSE}
+#No messages and warnings in HTML output
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo = FALSE,
+                      fig.width = 10, fig.height = 7)
+```
+
+```{r Load Packages and Data, include=FALSE}
+#Clear memory
+rm(list = ls(all = TRUE))
+
+#Load packages
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  tidyverse,     # data management and visualization
+  systemfonts,   # use downloaded fonts
+  showtext,      # help with fonts 
+  ggtext,        # Prettier titles etc
+  ggiraph,       # Interactive ggplots
+  here,          # relative file pathways
+  RColorBrewer,  # effective color palettes  
+  colorspace,    # fancy work with colors like darken, lighten, & swatchplot
+  countrycode,   # iso codes and country names
+  viridis,       # better map colors
+  worldfootballR,# football statistics
+  feather        # light weight files
+)
+
+# # #Download basic player-level stats from FbRef for 2020-21 to 2022-23 seasons
+# footballers <- fb_big5_advanced_season_stats(season_end_year= 2023, stat_type= "standard", team_or_player= "player")
+# #Save downloaded data as feather file
+# write_feather(footballers,
+#               here("Europe_Borders/footballers.feather"))
+
+#Load downloaded footballer data
+footballers <- read_feather(here("Europe_Borders/footballers.feather"))
+
+#Load coutnry abbreviations matched to names so we can get full names
+fifaCodes <- read.csv(here("Europe_Borders/Fifa_Country_Codes.csv"))
+
+#Load downloaded world population data (https://databank.worldbank.org/source/population-estimates-and-projections)
+popData <- read.csv(here("Europe_Borders/WB_Population_2022.csv")) %>%
+  rename( "Nation" = "Country.Name") %>%
+  #Make some names match the names in the other datasets
+  mutate(Nation = case_when(
+    Nation == "United Kingdom" ~ "UK",
+    Nation == "United States" ~ "USA",
+    Nation == "Bosnia & Herzegovina" ~ "Bosnia and Herzegovina",
+    Nation == "Cote d'Ivoire" ~  "Ivory Coast",
+    Nation == "Czechia" ~ "Czech Republic",
+    Nation == "Ireland" ~ "Republic of Ireland",
+    Nation == "Congo, Dem. Rep." ~ "Democratic Republic of the Congo",
+    Nation == "Congo, Rep." ~ "Republic of Congo",
+    Nation == "Russian Federation" ~ "Russia",
+    Nation == "Yemen, Rep." ~ "Yemen",
+    Nation == "Egypt, Arab Rep." ~ "Egypt",
+    Nation == "Syrian Arab Republic" ~ "Syria",
+    Nation == "Turkiye" ~ "Turkey",
+    Nation == "Iran, Islamic Rep." ~ "Iran",
+    Nation == "Venezuela, RB" ~ "Venezuela",
+    Nation == "Slovak Republic" ~ "Slovakia",
+    Nation == "Kyrgyz Republic" ~ "Kyrgyzstan",
+    Nation == "Korea, Dem. People's Rep." ~ "North Korea",
+    Nation == "Korea, Rep." ~ "South Korea",
+    Nation == "Lao PDR" ~ "Laos",
+    Nation == "Gambia, The" ~ "Gambia",
+    TRUE ~ Nation
+    )
+  )
+
+
+
+#Load country polygons
+borders <- map_data("world") %>%
+  rename(Nation = region) %>%
+   mutate(Nation = case_when(       
+    Nation == "Ireland" ~ "Republic of Ireland",
+    # Nation == "Ivory Coast" ~  "Côte d’Ivoire",
+    TRUE ~ Nation
+    )
+  )
+
+footballersNats <- footballers %>%
+    mutate(Nation = case_when(
+    Nation %in% c("ENG", "SCO","NIR", "WAL") ~ "UK", 
+    TRUE ~ Nation
+    )
+  ) %>%
+  group_by(Nation) %>%
+  summarise(Count = n()) %>%
+  #Give full country names
+  rename(Nation_Code = Nation) %>%
+  left_join(fifaCodes, by="Nation_Code") %>%
+  mutate(Nation = case_when(
+    Nation_Code == "UK" ~ "UK", 
+    TRUE ~ Nation
+    )
+  )
+
+#For inspecting country names attached to polygons. e.g. UK vs United Kingdom
+bordersNats <- borders$Nation %>% unique() %>% as.data.frame()
+
+#For inspecting country names attached footballer data. e.g. UK vs United Kingdom
+tmp2 <- footballers$Nation %>%
+  unique() %>%
+  as.data.frame()
+
+#Add Cabin font family
+font_add(family = "Cabin", 
+         regular = "C:/USERS/GVAND/APPDATA/LOCAL/MICROSOFT/WINDOWS/FONTS/Cabin-VariableFont_wdth,wght.ttf")
+showtext_auto()
+
+#Text colors for use in plots
+light_text <- "grey30"
+dark_text <- "#0a0903"
+
+#Save Caption for plots 
+myCaption <- c("Data Source: FBref.com 2022-23 Season Standard Statistics & World Bank 2022 Population Estimates",
+               "Created by Gregory Vander Vinne")
+
+```
+
+```{r Wrangle Data}
+
+#Get number of players by nationality
+natData <- footballers %>%
+    mutate(Nation = case_when(
+    Nation %in% c("ENG", "SCO","NIR", "WAL") ~ "UK", 
+    TRUE ~ Nation
+    )
+  ) %>%
+  group_by(Nation) %>%
+  summarise(Count = n()) %>%
+  #Give full country names
+  rename(Nation_Code = Nation) %>%
+  left_join(fifaCodes, by="Nation_Code") %>%
+  mutate(Nation = case_when(
+    Nation_Code == "UK" ~ "UK",
+    Nation_Code == "COD" ~ "Democratic Republic of the Congo",
+    Nation_Code == "CGO" ~ "Republic of Congo",
+    Nation_Code == "KOR" ~ "South Korea",
+    TRUE ~ Nation
+    )
+  ) %>%
+  full_join(borders, by = "Nation") %>%
+  left_join(popData, by = "Nation") %>%
+  filter(Nation != "Antarctica")
+
+#Replace NA player count with 0
+natData$Count[is.na(natData$Count)] <- 0
+
+natData <- natData %>%
+  mutate(CountPer10M =  Count/Pop*10000000)
+
+natDataNats <- natData$Nation %>%
+  unique() %>%
+  as.data.frame()
+
+```
+
+
+```{r GGPlot Log Scaled}
+#Setup for tooltip
+natData$tooltip <- c(paste0("Country: ", natData$Nation,
+                                "\n Players Per 10 Million People: ", round(natData$CountPer10M,1),
+                                "\n Total Players: ", natData$Count, 
+                                "\n Population: ", scales::comma(natData$Pop)))
+
+#PLot with log scale
+world_gg_log <- natData %>%
+  ggplot(aes(x=long, y=lat, group = group, 
+             text = paste0('Country: ', Nation, 
+                          '<br>', 'Players Per 10 Million People: ', round(CountPer10M,2)),
+             # fill = Count/Pop*1000000+(0.01/1000000)
+             fill = CountPer10M
+             # fill = Count
+             )) + 
+    geom_polygon_interactive(tooltip = natData$tooltip,
+                             data_id = natData$tooltip) + 
+    # coord_fixed(xlim = c(-15,40),
+    #             ylim = c(35, 65))+
+    # scale_fill_distiller(palette = "Blues", direction = 1) +
+    # scale_fill_gradientn(colours = myPal,
+    #                     trans = "log", breaks = c(0.1,1,7),
+    #                     name = "Players Per Million") +
+    scale_fill_viridis(option = "viridis",
+                       breaks = c(0, 0.2, 20), 
+                       trans = scales::pseudo_log_trans(sigma = 0.001),
+                       name = paste0("Players Per", 
+                                    "\n", 
+                                    "10M Pop"),
+                       labels = scales::comma)+
+    labs(title = "Number of Players in the Top Five Leagues as a Share of Population",
+         caption = myCaption
+         ) + 
+    theme_minimal() +
+    theme(
+       plot.background = element_rect(fill  = "#EFEFEF", color = "#EFEFEF"),
+       panel.background = element_rect(fill  = "#EFEFEF", color = "#EFEFEF"),
+      # legend.position = c(0.177,1.03),
+      # legend.direction = "horizontal",
+      # legend.margin = margin(0),
+      # legend.background = element_rect(fill  = "#EFEFEF"),
+      # legend.position = "bottom",
+      panel.grid = element_blank(), 
+      axis.ticks = element_blank(),
+      plot.title.position = "plot",
+      plot.caption.position = "plot",
+      plot.title = ggtext::element_textbox_simple(color = dark_text, 
+                                family = "Cabin", 
+                                size = 22,
+                                margin = margin(6, 6, 15, 6)
+                                ),
+      plot.subtitle = ggtext::element_textbox_simple(color = light_text, 
+                                                    family = "Cabin", 
+                                                    size = 12,
+                                                    margin = margin(0,6,15,6)),
+      axis.title = element_blank(),
+      axis.text = element_blank(),
+      plot.caption = element_text(color = light_text, 
+                                  family = "Cabin", 
+                                  size = 9,
+                                  margin = margin(0,6,4,6),
+                                  hjust = c(0,1)), #One in bottom-left, one in bottom-right
+      legend.text = element_text(color = light_text, 
+                                 family = "Cabin", 
+                                 size = 10,
+                                 margin = margin(0,0,4,0)),
+    )
+
+# world_gg_log
+
+
+
+```
+
+
+```{r Ggiraph Map}
+girafe(ggobj = world_gg_log) %>%
+  girafe_options(opts_zoom(max = 15))
+```
+
+```{r Bar Plot}
+#carathompson.com/talks/nhsr2022-ggplot-themes/
+
+#Slice not working
+mostPlayers <- natData %>%
+  group_by(Nation) %>%
+  slice_sample(n=1) %>% #Keep just one row per country
+  select(Count, CountPer10M, Nation, Pop) %>%
+  ungroup()
+
+mostPlayers$tooltip <- c(paste0("Country: ", mostPlayers$Nation,
+                                "\n Players Per 10 Million People: ", round(mostPlayers$CountPer10M,1),
+                                "\n Total Players: ", mostPlayers$Count, 
+                                "\n Population: ", scales::comma(mostPlayers$Pop)))
+
+test <- mostPlayers %>%
+  slice_max(CountPer10M, n=10) %>%
+  arrange(CountPer10M) %>%
+  {
+  ggplot(.,aes(x=reorder(Nation, desc(CountPer10M)), y=CountPer10M))+
+    geom_col_interactive(fill = viridis::viridis_pal()(5)[3],
+                         tooltip = .$tooltip,
+                         data_id = .$tooltip) +
+    geom_text(aes(label=round(CountPer10M,1), vjust = -0.25),
+              family = "Cabin", size = 4, color = light_text) +
+    labs(title = "Kicking Above Their Weight Class",
+         subtitle = "This plot shows the ten countries that have the greatest number of footballers in the top five leagues as a share of their population. While Croatia, Spain, and Uruguay clearly produce a disproportionaltley large share of the world's best footballers, countries like Grenada and Iceland are harder to draw conclusions about because their small populations put them in the top ten with just one or two players.",
+         caption = myCaption) +
+    ylab("Footballers in The Top Five Leagues Per 10 Million People") +
+    theme_minimal() +
+    theme(
+       plot.background = element_rect(fill  = "#EFEFEF", color = "#EFEFEF"),
+       panel.background = element_rect(fill  = "#EFEFEF", color = "#EFEFEF"),
+      # legend.position = c(0.177,1.03),
+      # legend.direction = "horizontal",
+      # legend.margin = margin(0),
+      # legend.background = element_rect(fill  = "#EFEFEF"),
+      # legend.position = "bottom",
+      panel.grid = element_blank(), 
+      axis.ticks = element_blank(),
+      plot.title.position = "plot",
+      plot.caption.position = "plot",
+      plot.title = ggtext::element_textbox_simple(color = dark_text, 
+                                family = "Cabin", 
+                                size = 22,
+                                margin = margin(6, 6, 15, 6)
+                                ),
+      plot.subtitle = ggtext::element_textbox_simple(color = light_text, 
+                                                    family = "Cabin", 
+                                                    size = 12,
+                                                    margin = margin(0,6,15,6)),
+      axis.title.x = element_blank(),       
+      axis.title.y = element_text(color = light_text, 
+                                  family = "Cabin", 
+                                  size = 12,
+                                  margin = margin(0,8,0,6)),
+      axis.text = element_text(color = light_text, 
+                               family = "Cabin", 
+                               size = 10,
+                               margin = margin(0,0,4,0)),
+      plot.caption = element_text(color = light_text, 
+                                  family = "Cabin", 
+                                  size = 9,
+                                  margin = margin(15,0,4,6),
+                                  hjust = c(0,1))
+    )
+    }
+
+girafe(ggobj = test)
+
+
+```
+European countries, specifically western European countries and Balkan countries, generally produce the most players per capita. South American countries and west African countries produce fewer players per capita but still contribute their fair share. Although the lack of players from most Asian countries was unsurprising to me, I found the near-total lack of players in east Africa quite surprising, especially considering the relatively high number of players from many west African countries. 
+
+To me, Uruguay is the most stunning individual country. Producing the third highest number of players per capita is impressive enough, but the fact that on a per captia basis they produce players at nearly five times the rate of neighbouring Argentina and approximately seventeen times the rate of neighbouring Brazil is astonishing. While Croatia and Spain produce slightly more players per capita, they do not stand out as much from their respective geographic regions.   
+
+The countries of the top five leagues themselves may have slightly higher numbers than they otherwise would due to rules surrounding home-grown players; these are rules that encourage teams to have players from the league's home country. Furthermore, countries with strong domestic leagues that aren't the top five themselves leagues may have fewer players than they would if they had weaker domestic leagues. For example, a Turkish player who is good enough to play in the top five leagues may choose to play for a top Turkish team because they would rather stay close to home. However an Icelandic player good enough to play in the top five leagues will almost certainly not play in the Icelandic league because it is too weak. 
+
+It is worth noting that I had to group the UK together as one rather than separating it into England, Scotland, Wales, and Northern Ireland.
+
+Of course, the causes of the differences in the numbers of players produced by different countries are myriad. In the book *Soccernomics,* authors Simon Kuper and Stefan Szymanski, provide a discussion of the factors they believe play the most important roles in determining the success of a country's national team, including culture, history, and economic strength, among others. 
+
+In the future, I would like to produce similar visualizations for female players, or perhaps both genders combined. However, there is not, to my knowledge, as standard of a definition of the top X leagues in the women's game. If any readers are aware of a way I could look at this, feel free to contact me.    

@@ -12,9 +12,13 @@ navbar:
           href: keepers_2022_23_ggirafe.html
         - text: 'Sweeper Keeping in Different Leagues'
           href: Sweeper_Keepers.html
+        - text: 'Where are Footballers From?'
+          href: Footballer_Nationalities.html          
     - text: 'Maps' # setting up a drop down menu
       menu:
         - text: 'Population Density Maps'
           href: Pop_Density_Maps.html
+        - text: 'Where are Footballers From?'
+          href: Footballer_Nationalities.html  
   html_document:
   theme: sandstone
