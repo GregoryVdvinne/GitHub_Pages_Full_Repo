@@ -1,5 +1,5 @@
 ---
-title: "Which Countries Produce Disproportionate Numbers of Top Footballers?"
+title: "Which Countries Produce Disproportionate Numbers of Footballers in The Top Five Leagues?"
 author: "Gregory Vander Vinne"
 date: "2023-11-5"
 output:
@@ -9,7 +9,7 @@ output:
     toc_float: false
 ---
 
-As somebody who is interested in both geography and football (soccer), I thought it would be interesting to see which countries produce top footballers at the greatest frequency. Fbref.com already does a good job of laying out which countries account for the most players (https://fbref.com/en/comps/Big5/nations/Big-5-European-Leagues-Nationalities). Unsurprisingly, the five countries that produce the highest sheer number of players are the countries of the top five leagues themselves (Spain, France, Italy Germany and England, in that order), while Brazil, Argentina, the Netherlands, Portugal and Belgium round out the top ten. 
+As somebody who is interested in both geography and football (soccer), I thought it would be interesting to see which countries produce footballers in the top five leagues at the greatest frequency. Fbref.com already does a good job of laying out which countries account for the most players (https://fbref.com/en/comps/Big5/nations/Big-5-European-Leagues-Nationalities). Unsurprisingly, the five countries that produce the highest sheer number of players are the countries of the top five leagues themselves (Spain, France, Italy Germany and England, in that order), while Brazil, Argentina, the Netherlands, Portugal and Belgium round out the top ten. 
 
 To get a better sense of which countries are the best at producing top level players in the men's game, I decided to examine which countries account for the most players in the top five leagues *as a share of their population.* 
 
@@ -330,7 +330,7 @@ European countries, specifically western European countries and Balkan countries
 
 To me, Uruguay is the most stunning individual country. Producing the third highest number of players per capita is impressive enough, but the fact that on a per captia basis they produce players at nearly five times the rate of neighbouring Argentina and approximately seventeen times the rate of neighbouring Brazil is astonishing. While Croatia and Spain produce slightly more players per capita, they do not stand out as much from their respective geographic regions.   
 
-The countries of the top five leagues themselves may have slightly higher numbers than they otherwise would due to rules surrounding home-grown players; these are rules that encourage teams to have players from the league's home country. Furthermore, countries with strong domestic leagues that aren't the top five themselves leagues may have fewer players than they would if they had weaker domestic leagues. For example, a Turkish player who is good enough to play in the top five leagues may choose to play for a top Turkish team because they would rather stay close to home. However an Icelandic player good enough to play in the top five leagues will almost certainly not play in the Icelandic league because it is too weak. 
+The countries of the top five leagues themselves may have higher numbers than they otherwise would due to rules surrounding home-grown players; these are rules that encourage teams to have players from the league's home country. Furthermore, countries with strong domestic leagues that aren't the top five themselves leagues may have fewer players than they would if they had weaker domestic leagues. For example, a Turkish player who is good enough to play in the top five leagues may choose to play for a top Turkish team because they would rather stay close to home. However an Icelandic player good enough to play in the top five leagues will almost certainly not play in the Icelandic league because it is too weak. Of course, being closer to the countries of the top five leagues in general will probably boost a country's numbers. This makes the map somewhat eurocentric.  
 
 It is worth noting that I had to group the UK together as one rather than separating it into England, Scotland, Wales, and Northern Ireland.
 
