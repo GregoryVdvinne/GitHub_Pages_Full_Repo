@@ -202,16 +202,9 @@ plot_func <- function(Data, X, Y,
                       ZeroLineColor=NULL) {
 
  Data$tooltip <- c(paste0("Name = ", Data$Name,
-<<<<<<< HEAD
                           "\n Team = ", Data$Squad,
                           "\n Age = ", Data$Age, 
                           "\n Matches = ", Data$Matches))
-=======
-                        "\n Age = ", Data$Team,
-                        "\n Age = ", Data$Age, 
-                        "\n Matches = ", Data$Matches))
->>>>>>> Footballer_Maps
- 
  p <- ggplot(Data, aes(x=X, y=Y, color=Age_Category)) +
     geom_point_interactive(tooltip = Data$tooltip, 
                            data_id=Data$Name, 
@@ -224,7 +217,7 @@ plot_func <- function(Data, X, Y,
                     ) + 
     scale_color_manual(values=colPal[1:3], name = "Age Category:")+
     ggtitle(mainTitle, 
-            subtitle = "\n" ) + #creat space at top-left for legend 
+            subtitle = "\n" ) + #create space at top-left for legend 
     xlab(xTitle) + 
     ylab(yTitle) +
     labs(caption = "Data Source: FBref.com") +
