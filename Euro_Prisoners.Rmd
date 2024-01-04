@@ -1,0 +1,184 @@
+---
+title: "Exploring European Prisoner Populations"
+author: "Gregory Vander Vinne"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: false
+---
+
+```{r setup, include=FALSE}
+#Clear memory
+rm(list = ls(all = TRUE))
+
+#Set some rmarkdown options
+knitr::opts_chunk$set(echo = FALSE)
+
+#Load packages
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  here,           # data cleaning and tables
+  tidyverse,      # data management and visualization
+  eurostat,       # load data directly from eurostat
+  knitr,          # print pretty results
+  ggiraph,        # interactive ggplots
+  showtext,       # custom fonts
+  RColorBrewer,   # color palettes
+  giscoR,         # shape files etc
+  sf,             # gis stuff
+  colorspace      # fancy stuff with colors  
+)
+
+```
+
+``` {r Load Stuff}
+
+# #Find the eurostat data based on what I know of the table code
+# toc <- eurostat::get_eurostat_toc()
+# i <- "crim_pris"
+# tab <- subset(
+#     toc, grepl(i, code)
+# )
+# fix(tab)
+
+#Download entire data set
+myData <- eurostat::get_eurostat("crim_pris_age")
+
+#Wrangle data a bit
+myData <- myData %>%
+  filter(
+    unit == "P_HTHAB", # Per 10m inhabitants
+    sex == "T",        # Male and female
+    age == "TOTAL"     # All ages   
+    ) %>%
+  mutate(year = substr(TIME_PERIOD, start = 1, stop = 4)) %>% #Take only year
+  select(-c(TIME_PERIOD)) %>%
+  pivot_wider(names_from = year, values_from = values) %>% #years into cols
+  mutate(ten_chg = (`2021` - `2012`)) #Calculate change from 2012 to 2021
+
+#Define longlat projection
+crsLongLat <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+
+nuts2 <- giscoR::gisco_get_nuts(
+    year = "2021",
+    resolution = "3",
+    nuts_level = "0"
+) %>%
+    sf::st_transform(crsLongLat)
+
+# plot(sf::st_geometry(nuts2))
+# head(nuts2)
+
+
+# cntrys <- giscoR::gisco_get_countries(
+#     year = "2020",
+#     resolution = "3",
+#     region = c("Europe", "Asia")
+# ) |>
+#     sf::st_transform(crsLongLat)
+# 
+# names(cntrys)
+# 
+# plot(sf::st_geometry(cntrys))
+
+#Join nuts2 with myData
+myData <- left_join(nuts2, myData, by = "geo")
+
+```
+
+``` {r Map}
+
+### Colors and stuff ###
+
+#Add Cabin font family
+font_add(family = "Cabin", 
+         regular = "C:/USERS/GVAND/APPDATA/LOCAL/MICROSOFT/WINDOWS/FONTS/Cabin-VariableFont_wdth,wght.ttf")
+showtext_auto()
+
+#Text Colors
+dark_text = "#0a0903"
+light_text = "grey30" 
+
+#Background color
+back_color = lighten("#F0DCCA", 0.8)
+
+#Load palette 
+myPal <- brewer.pal(11, "RdBu")
+
+#View palette
+swatchplot(myPal)
+
+
+### Bounding Box ###
+#Create europe bounding box
+crsLAEA <- "+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +datum=WGS84 +units=m +no_defs"
+get_bounding_box_europe <- function() {
+    xmin <- -10.6600
+    xmax <- 36.5500
+    ymin <- 34.5000
+    ymax <- 71.0500
+
+    bbox_laea <- sf::st_sfc(
+        sf::st_polygon(list(cbind(
+            c(xmin, xmax, xmax, xmin, xmin),
+            c(ymin, ymin, ymax, ymax, ymin)
+        ))),
+        crs = crsLongLat
+    ) |> sf::st_transform(crsLAEA)
+
+    bbox <- sf::st_bbox(bbox_laea)
+    return(bbox)
+}
+bbox <- get_bounding_box_europe()
+
+
+### Plot ###
+
+p <- ggplot(nuts2) +
+  geom_sf() + 
+  coord_sf(
+      crs = crsLAEA,
+      xlim = c(bbox["xmin"], bbox["xmax"]),
+      ylim = c(bbox["ymin"], bbox["ymax"])
+  ) +
+  ggtitle("Blah Blah Blah") +
+  theme_minimal() +
+    theme(
+       plot.background = element_rect(fill  = back_color, color = back_color),
+       panel.background = element_rect(fill  = back_color, color = back_color),
+      # legend.position = c(0.177,1.03),
+      # legend.direction = "horizontal",
+      # legend.margin = margin(0),
+      # legend.background = element_rect(fill  = back_color),
+      # legend.position = "bottom",
+      panel.grid = element_blank(), 
+      axis.ticks = element_blank(),
+      plot.title.position = "plot",
+      plot.caption.position = "plot",
+      plot.title = ggtext::element_textbox_simple(color = dark_text, 
+                                family = "Cabin", 
+                                size = 22,
+                                margin = margin(6, 6, 15, 6)
+                                ),
+      plot.subtitle = ggtext::element_textbox_simple(color = light_text, 
+                                                    family = "Cabin", 
+                                                    size = 12,
+                                                    margin = margin(0,6,15,6)),
+      axis.title = element_blank(),
+      axis.text = element_blank(),
+      plot.caption = element_text(color = light_text, 
+                                  family = "Cabin", 
+                                  size = 9,
+                                  margin = margin(0,6,4,6),
+                                  hjust = c(0,1)), #One in bottom-left, one in bottom-right
+      legend.text = element_text(color = light_text, 
+                                 family = "Cabin", 
+                                 size = 10,
+                                 margin = margin(0,0,4,0)),
+    )
+
+p
+
+```
+
