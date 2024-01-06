@@ -11,7 +11,7 @@
 
 <meta name="author" content="Gregory Vander Vinne" />
 
-<meta name="date" content="2024-01-04" />
+<meta name="date" content="2024-01-06" />
 
 <title>Exploring European Prisoner Populations</title>
 
@@ -295,13 +295,60 @@ $(document).ready(function () {
 <h1 class="title toc-ignore">Exploring European Prisoner
 Populations</h1>
 <h4 class="author">Gregory Vander Vinne</h4>
-<h4 class="date">2024-01-04</h4>
+<h4 class="date">2024-01-06</h4>
 
 </div>
 
 
-<p><img src="Euro_Prisoners_files/figure-html/Map%20Setup-1.png" width="864" /></p>
+<p><img src="Euro_Prisoners_files/figure-html/Plotting%20Setup-1.png" width="864" /></p>
 <p><img src="Euro_Prisoners_files/figure-html/Plot%20Map-1.png" width="864" /></p>
+<p><img src="Euro_Prisoners_files/figure-html/Slope%20Graph-1.png" width="864" /></p>
+<!-- ```{r Animated Map} -->
+<!-- longData <- myData %>% pivot_longer(cols = c(as.character(2008:2021)), -->
+<!--                              names_to = "Year", -->
+<!--                              values_to = "Value") %>% -->
+<!--   mutate(Year = as.integer(Year)) -->
+<!-- p <- ggplot(longData) + -->
+<!--   geom_sf(aes(fill = Value)) + -->
+<!--   coord_sf( -->
+<!--       crs = crsLAEA, -->
+<!--       xlim = c(bbox["xmin"], bbox["xmax"]), -->
+<!--       ylim = c(bbox["ymin"], bbox["ymax"]) -->
+<!--   ) + -->
+<!--   labs(title = 'Year: {frame_time}') + -->
+<!--   transition_time(Year) + -->
+<!--   ease_aes('linear')+ -->
+<!--   theme_minimal() + -->
+<!--     theme( -->
+<!--       plot.background = element_rect(fill  = back_color, color = back_color), -->
+<!--       panel.background = element_rect(fill  = back_color, color = back_color), -->
+<!--       panel.grid = element_blank(), -->
+<!--       axis.ticks = element_blank(), -->
+<!--       plot.title.position = "plot", -->
+<!--       plot.caption.position = "plot", -->
+<!--       plot.title = ggtext::element_textbox_simple(color = dark_text, -->
+<!--                                 # family = "Cabin", -->
+<!--                                 size = 22, -->
+<!--                                 margin = margin(6, 6, 15, 6) -->
+<!--                                 ), -->
+<!--       plot.subtitle = ggtext::element_textbox_simple(color = light_text, -->
+<!--                                                     # family = "Cabin", -->
+<!--                                                     size = 12, -->
+<!--                                                     margin = margin(0,6,15,6)), -->
+<!--       axis.title = element_blank(), -->
+<!--       axis.text = element_blank(), -->
+<!--       plot.caption = element_text(color = light_text, -->
+<!--                                   # family = "Cabin", -->
+<!--                                   size = 9, -->
+<!--                                   margin = margin(0,6,4,6), -->
+<!--                                   hjust = c(0,1)), #One in bottom-left, one in bottom-right -->
+<!--       legend.text = element_text(color = light_text, -->
+<!--                                  # family = "Cabin", -->
+<!--                                  size = 10, -->
+<!--                                  margin = margin(0,0,4,0)), -->
+<!--     ) -->
+<!-- p -->
+<!-- ``` -->
 
 
 

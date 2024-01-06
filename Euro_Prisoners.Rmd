@@ -93,7 +93,7 @@ myData <- left_join(nuts, myData, by = "geo") %>%
 
 ```
 
-``` {r Map Setup}
+``` {r Plotting Setup}
 
 ### Colors and stuff ###
 
@@ -102,20 +102,65 @@ font_add(family = "Cabin",
          regular = "C:/USERS/GVAND/APPDATA/LOCAL/MICROSOFT/WINDOWS/FONTS/Cabin-VariableFont_wdth,wght.ttf")
 showtext_auto()
 
+# Save Caption
+myCaption <- c("Data Sources: Eurostat & UK House of Commons Library", "Created by Gregory Vander Vinne")
+
 #Text Colors
-dark_text = "#0a0903"
-light_text = "grey30" 
+dark_text = darken("#696047",0.75)
+light_text = "#696047" 
 
-#Background color
-# back_color = lighten("#f2e86d", 0.98)
+# Background color
+back_color = lighten("#f2e86d", 0.95)
 # back_color = "#EFEFEF"
-back_color = "white"
+# back_color = "white"
 
-#Load palette 
-divergingPal <- brewer.pal(8, "RdBu")[c(1:3,6:8)]
+# #Load discrete diverging palette 
+# divergingPal <- brewer.pal(8, "RdBu")[c(1:3,6:8)]
+
+#Load continuous diverging palette 
+divergingPal <- brewer.pal(11, "RdBu")[c(1,11)]
 
 #View palette
 swatchplot(divergingPal)
+
+
+#Define Theme
+my_theme <- function() {
+  theme_minimal() +
+    theme(
+      plot.background = element_rect(fill  = back_color, color = back_color),
+      panel.background = element_rect(fill  = back_color, color = back_color),
+      panel.grid = element_blank(), 
+      axis.ticks = element_blank(),
+      plot.title.position = "plot",
+      plot.caption.position = "plot",
+      plot.title = ggtext::element_textbox_simple(color = dark_text, 
+                                family = "Cabin", 
+                                size = 24,
+                                margin = margin(6, 6, 15, 6)
+                                ),
+      plot.subtitle = ggtext::element_textbox_simple(color = light_text, 
+                                                    family = "Cabin", 
+                                                    size = 12,
+                                                    margin = margin(0,6,15,6)),
+      axis.title = element_blank(),
+      axis.text = element_blank(),
+      plot.caption = element_text(color = light_text, 
+                                  family = "Cabin", 
+                                  size = 9,
+                                  margin = margin(0,6,4,6),
+                                  hjust = c(0,1)), # One in bottom-left, one in bottom-right
+      legend.text = element_text(color = light_text, 
+                                 family = "Cabin", 
+                                 size = 10,
+                                 margin = margin(0,0,4,0)),
+      legend.title = element_text(color = light_text, 
+                                 family = "Cabin", 
+                                 size = 11,
+                                 margin = margin(0,0,4,0))      
+    )
+
+}
 
 
 ### Bounding Box ###
@@ -153,41 +198,110 @@ p <-
       xlim = c(bbox["xmin"], bbox["xmax"]),
       ylim = c(bbox["ymin"], bbox["ymax"])
   ) +
-  ggtitle("Blah Blah Blah") +
+  labs(title = "Change in Number of Prisoners Per 100k Population From 2011 to 2021",
+       subtitle = "While most European countries saw their prison populations decrease modeslty as a share of their total populations from 2011 to 2021, the Baltic countries saw significant decreases, and Turkiye saw a massive increase.",
+       caption = myCaption) +
   # scale_fill_distiller("RdBu") +
-  scale_fill_stepsn(colours=rev(divergingPal),
-                      breaks=seq(-150,150,by=60)) +
-  theme_minimal() +
-    theme(
-      plot.background = element_rect(fill  = back_color, color = back_color),
-      panel.background = element_rect(fill  = back_color, color = back_color),
-      panel.grid = element_blank(), 
-      axis.ticks = element_blank(),
-      plot.title.position = "plot",
-      plot.caption.position = "plot",
-      plot.title = ggtext::element_textbox_simple(color = dark_text, 
-                                family = "Cabin", 
-                                size = 22,
-                                margin = margin(6, 6, 15, 6)
-                                ),
-      plot.subtitle = ggtext::element_textbox_simple(color = light_text, 
-                                                    family = "Cabin", 
-                                                    size = 12,
-                                                    margin = margin(0,6,15,6)),
-      axis.title = element_blank(),
-      axis.text = element_blank(),
-      plot.caption = element_text(color = light_text, 
-                                  family = "Cabin", 
-                                  size = 9,
-                                  margin = margin(0,6,4,6),
-                                  hjust = c(0,1)), # One in bottom-left, one in bottom-right
-      legend.text = element_text(color = light_text, 
-                                 family = "Cabin", 
-                                 size = 10,
-                                 margin = margin(0,0,4,0)),
-    )
-
+  # scale_fill_stepsn(colours=rev(divergingPal),
+  #                     breaks=seq(-150,150,by=60)) +
+  scale_fill_gradient2(low = divergingPal[2],  high = divergingPal[1],
+                       midpoint = 0, mid = "white",
+                       name = paste0("Change in", 
+                                     "\n", 
+                                     "Prisoners Per", 
+                                     "\n", 
+                                     "100k Pop")) + 
+  my_theme()
 p
 
 ```
+
+``` {r Slope Graph}
+
+
+slope_data <-  myData %>%
+  select(`2011`, `2021`, geo, ten_chg
+         # ,country = NAME_ENGLISH
+         ) %>%
+  pivot_longer(cols = c(`2011`,`2021`),
+                             names_to = "Year",
+                             values_to = "Value") %>%
+  mutate(Year = as.integer(Year)) %>%
+  drop_na()
+
+p <- ggplot(slope_data, aes(x = Year, y = Value, color = ten_chg, group = geo)) + 
+  geom_line(show.legend = FALSE) + 
+  geom_point(show.legend = FALSE) + 
+  geom_vline(xintercept = c(2011, 2021)) + 
+  #Labels for first Year
+  geom_text(data = subset(slope_data, Year == 2011), 
+            aes(x = Year, y = Value, label = geo), 
+            hjust = 1, nudge_x = -.05, 
+            show.legend = FALSE, inherit.aes = FALSE) + 
+  #Labels for second Year
+  geom_text(data = subset(slope_data, Year == 2021), 
+            aes(x = Year, y = Value, label = geo), 
+            hjust = 0, nudge_x = .05, 
+            show.legend = FALSE, inherit.aes = FALSE) + 
+  scale_color_gradient(low = divergingPal[2],  high = divergingPal[1],
+                       name = "") +  
+  my_theme()
+
+p
+```
+
+
+
+<!-- ```{r Animated Map} -->
+<!-- longData <- myData %>% pivot_longer(cols = c(as.character(2008:2021)), -->
+<!--                              names_to = "Year", -->
+<!--                              values_to = "Value") %>% -->
+<!--   mutate(Year = as.integer(Year)) -->
+
+<!-- p <- ggplot(longData) + -->
+<!--   geom_sf(aes(fill = Value)) + -->
+<!--   coord_sf( -->
+<!--       crs = crsLAEA, -->
+<!--       xlim = c(bbox["xmin"], bbox["xmax"]), -->
+<!--       ylim = c(bbox["ymin"], bbox["ymax"]) -->
+<!--   ) + -->
+<!--   labs(title = 'Year: {frame_time}') + -->
+<!--   transition_time(Year) + -->
+<!--   ease_aes('linear')+ -->
+<!--   theme_minimal() + -->
+<!--     theme( -->
+<!--       plot.background = element_rect(fill  = back_color, color = back_color), -->
+<!--       panel.background = element_rect(fill  = back_color, color = back_color), -->
+<!--       panel.grid = element_blank(), -->
+<!--       axis.ticks = element_blank(), -->
+<!--       plot.title.position = "plot", -->
+<!--       plot.caption.position = "plot", -->
+<!--       plot.title = ggtext::element_textbox_simple(color = dark_text, -->
+<!--                                 # family = "Cabin", -->
+<!--                                 size = 22, -->
+<!--                                 margin = margin(6, 6, 15, 6) -->
+<!--                                 ), -->
+<!--       plot.subtitle = ggtext::element_textbox_simple(color = light_text, -->
+<!--                                                     # family = "Cabin", -->
+<!--                                                     size = 12, -->
+<!--                                                     margin = margin(0,6,15,6)), -->
+<!--       axis.title = element_blank(), -->
+<!--       axis.text = element_blank(), -->
+<!--       plot.caption = element_text(color = light_text, -->
+<!--                                   # family = "Cabin", -->
+<!--                                   size = 9, -->
+<!--                                   margin = margin(0,6,4,6), -->
+<!--                                   hjust = c(0,1)), #One in bottom-left, one in bottom-right -->
+<!--       legend.text = element_text(color = light_text, -->
+<!--                                  # family = "Cabin", -->
+<!--                                  size = 10, -->
+<!--                                  margin = margin(0,0,4,0)), -->
+<!--     ) -->
+
+<!-- p -->
+
+
+
+<!-- ``` -->
+
 
