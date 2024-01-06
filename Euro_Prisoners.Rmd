@@ -13,7 +13,8 @@ output:
 rm(list = ls(all = TRUE))
 
 #Set some rmarkdown options
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE,
+                      fig.height = 7, fig.width = 9)
 
 #Load packages
 if (!require("pacman")) install.packages("pacman")
@@ -60,34 +61,39 @@ myData <- myData %>%
 #Define longlat projection
 crsLongLat <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
 
-nuts2 <- giscoR::gisco_get_nuts(
+nuts <- giscoR::gisco_get_nuts(
     year = "2021",
     resolution = "3",
     nuts_level = "0"
 ) %>%
     sf::st_transform(crsLongLat)
 
-# plot(sf::st_geometry(nuts2))
-# head(nuts2)
+# plot(sf::st_geometry(nuts))
+# head(nuts)
 
 
-# cntrys <- giscoR::gisco_get_countries(
-#     year = "2020",
-#     resolution = "3",
-#     region = c("Europe", "Asia")
-# ) |>
-#     sf::st_transform(crsLongLat)
-# 
-# names(cntrys)
-# 
-# plot(sf::st_geometry(cntrys))
+cntrys <- giscoR::gisco_get_countries(
+    year = "2020",
+    resolution = "3",
+    region = c("Europe", "Asia")
+) %>%
+    sf::st_transform(crsLongLat)
 
-#Join nuts2 with myData
-myData <- left_join(nuts2, myData, by = "geo")
+non_eu_list <- c("BA", "BY", "GE","MD", "UA")
+
+non_eu <- cntrys %>%
+  filter(CNTR_ID %in% non_eu_list) %>%
+  rename(geo = CNTR_ID) %>%
+  as.data.frame()
+
+
+#Join nuts with myData
+myData <- left_join(nuts, myData, by = "geo") %>%
+  full_join(non_eu, by = c("geo", "geometry"))
 
 ```
 
-``` {r Map}
+``` {r Map Setup}
 
 ### Colors and stuff ###
 
@@ -101,13 +107,15 @@ dark_text = "#0a0903"
 light_text = "grey30" 
 
 #Background color
-back_color = lighten("#F0DCCA", 0.8)
+# back_color = lighten("#f2e86d", 0.98)
+# back_color = "#EFEFEF"
+back_color = "white"
 
 #Load palette 
-myPal <- brewer.pal(11, "RdBu")
+divergingPal <- brewer.pal(8, "RdBu")[c(1:3,6:8)]
 
 #View palette
-swatchplot(myPal)
+swatchplot(divergingPal)
 
 
 ### Bounding Box ###
@@ -131,27 +139,28 @@ get_bounding_box_europe <- function() {
     return(bbox)
 }
 bbox <- get_bounding_box_europe()
+```
 
-
+```{r Plot Map}
 ### Plot ###
 
-p <- ggplot(nuts2) +
-  geom_sf() + 
+p <-
+  ggplot() +
+  geom_sf(data = myData, aes(fill = ten_chg)) + 
+  # geom_sf(data = non_eu, aes(geometry = non_eu$geometry)) +
   coord_sf(
       crs = crsLAEA,
       xlim = c(bbox["xmin"], bbox["xmax"]),
       ylim = c(bbox["ymin"], bbox["ymax"])
   ) +
   ggtitle("Blah Blah Blah") +
+  # scale_fill_distiller("RdBu") +
+  scale_fill_stepsn(colours=rev(divergingPal),
+                      breaks=seq(-150,150,by=60)) +
   theme_minimal() +
     theme(
-       plot.background = element_rect(fill  = back_color, color = back_color),
-       panel.background = element_rect(fill  = back_color, color = back_color),
-      # legend.position = c(0.177,1.03),
-      # legend.direction = "horizontal",
-      # legend.margin = margin(0),
-      # legend.background = element_rect(fill  = back_color),
-      # legend.position = "bottom",
+      plot.background = element_rect(fill  = back_color, color = back_color),
+      panel.background = element_rect(fill  = back_color, color = back_color),
       panel.grid = element_blank(), 
       axis.ticks = element_blank(),
       plot.title.position = "plot",
@@ -171,7 +180,7 @@ p <- ggplot(nuts2) +
                                   family = "Cabin", 
                                   size = 9,
                                   margin = margin(0,6,4,6),
-                                  hjust = c(0,1)), #One in bottom-left, one in bottom-right
+                                  hjust = c(0,1)), # One in bottom-left, one in bottom-right
       legend.text = element_text(color = light_text, 
                                  family = "Cabin", 
                                  size = 10,
