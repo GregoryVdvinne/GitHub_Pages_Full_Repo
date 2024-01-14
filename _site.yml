@@ -20,5 +20,9 @@ navbar:
           href: Pop_Density_Maps.html
         - text: 'Where are Footballers From?'
           href: Footballer_Nationalities.html  
+    - text: 'Monte Carlo Simulations' # setting up a drop down menu
+      menu:
+        - text: 'Comparing Two Modern Diff-in-Diff Methods'
+          href: Comparing-CS-with-Gardner.html 
   html_document:
   theme: sandstone
