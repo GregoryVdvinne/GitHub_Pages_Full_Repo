@@ -23,6 +23,10 @@ navbar:
     - text: 'Monte Carlo Simulations' # setting up a drop down menu
       menu:
         - text: 'Comparing Two Modern Diff-in-Diff Methods'
-          href: Comparing-CS-with-Gardner.html 
+          href: Comparing-CS-with-Gardner.html
+    - text: 'Tidy Tuesday Contributions' # setting up a drop down menu
+      menu:
+        - text: '2024'
+          href: Tidy_Tuesday_2024.html 
   html_document:
   theme: sandstone
