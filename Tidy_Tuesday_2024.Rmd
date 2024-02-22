@@ -6,6 +6,17 @@ output: html_document
 
 Below are a collection of data visualizations that I made as part of the Tidy Tuesday project. You can learn more about the Tidy Tuesday project [here](https://github.com/rfordatascience/tidytuesday). Code for my plots can be found in [this GitHub repo](https://github.com/GregoryVdvinne/Tidy_Tuesday). 
 
+### 2024-02-13
+
+<img src="Tidy_Tuesday_Plots/2024-02-13.png" style="width:100%">
+
+
+### 2024-02-06
+
+<img src="Tidy_Tuesday_Plots/2024-02-06_alluvial.png" style="width:100%">
+
+<img src="Tidy_Tuesday_Plots/2024-02-06_staircase.png" style="width:100%">
+
 ### 2024-01-30
 
 <img src="Tidy_Tuesday_Plots/2024-01-30.png" style="width:100%">
