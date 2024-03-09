@@ -1,5 +1,5 @@
 ---
-  title: "My Personal Website"
+  title: "Gregory Vander Vinne's Personal Website"
 ---
   
 Hello. My name is Gregory Vander Vinne. I analyze data and policies for a living in Edmonton, Canada. In my free time, I enjoy learning new skills related to data visualization, causal inference and all things data. I also enjoy playing and watching sports, especially soccer (football). A lot of the things I post here combine my interest in data analysis with my interest in sports.   
