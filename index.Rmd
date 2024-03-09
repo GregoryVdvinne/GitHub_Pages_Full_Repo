@@ -4,4 +4,4 @@
   
 Hello. My name is Gregory Vander Vinne. I analyze data and policies for a living in Edmonton, Canada. In my free time, I enjoy learning new skills related to data visualization, causal inference and all things data. I also enjoy playing and watching sports, especially soccer (football). A lot of the things I post here combine my interest in data analysis with my interest in sports.   
 
-I decided to create a website so that I can share some of the things I create with others. I hope that some people can enjoy reading my posts almost as much as I enjoy making them. 
+I decided to create a website so that I can share some of the things I create with others. I hope that some people can enjoy reading my posts almost as much as I enjoy making them. You can find me on [Twitter](https://twitter.com/GregoryVdvinne) or [LinkedIn](https://www.linkedin.com/in/gregory-vander-vinne/), where I also post many of my data visualizations. You can find the code for everything I post here on [my GitHub](https://github.com/GregoryVdvinne). 

@@ -4,8 +4,10 @@ navbar:
   right:
     - text: "Home"
       href: index.html
-    # - text: 'About'
-    #   href: about.html
+    - text: 'Tidy Tuesday Contributions' # setting up a drop down menu
+      menu:
+        - text: '2024'
+          href: Tidy_Tuesday_2024.html 
     - text: 'Football Graphs' # setting up a drop down menu
       menu:
         - text: 'Individual Goalkeeper Performance 2022-23'
@@ -24,9 +26,5 @@ navbar:
       menu:
         - text: 'Comparing Two Modern Diff-in-Diff Methods'
           href: Comparing-CS-with-Gardner.html
-    - text: 'Tidy Tuesday Contributions' # setting up a drop down menu
-      menu:
-        - text: '2024'
-          href: Tidy_Tuesday_2024.html 
   html_document:
   theme: sandstone
